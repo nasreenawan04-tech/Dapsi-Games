@@ -260,6 +260,41 @@ export const getWeeklyStats = async (userId: string) => {
   return Array.from(dailyStats.values());
 };
 
+export const getTodayStats = async (userId: string) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const pomodoroQuery = query(
+    collection(db, "pomodoroSessions"),
+    where("userId", "==", userId),
+    where("completedAt", ">=", Timestamp.fromDate(today))
+  );
+  
+  const tasksQuery = query(
+    collection(db, "tasks"),
+    where("userId", "==", userId),
+    where("completed", "==", true),
+    where("createdAt", ">=", Timestamp.fromDate(today))
+  );
+  
+  const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
+    getDocs(pomodoroQuery),
+    getDocs(tasksQuery)
+  ]);
+  
+  const pomodoroSessions = pomodoroSnapshot.docs.length;
+  const totalStudyTime = pomodoroSnapshot.docs.reduce((sum, doc) => {
+    return sum + (doc.data().duration || 0);
+  }, 0);
+  const tasksCompleted = tasksSnapshot.docs.length;
+  
+  return {
+    pomodoroSessions,
+    totalStudyTime,
+    tasksCompleted,
+  };
+};
+
 export const getRecentActivities = async (userId: string, limitCount: number = 10) => {
   const pomodoroQuery = query(
     collection(db, "pomodoroSessions"),

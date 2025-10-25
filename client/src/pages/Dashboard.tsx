@@ -7,7 +7,7 @@ import { Trophy, Target, Flame, TrendingUp, Award, CheckCircle2 } from "lucide-r
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { getUserTasks, getWeeklyStats, getRecentActivities, getUserBadges } from "@/lib/firebase";
+import { getUserTasks, getWeeklyStats, getRecentActivities, getUserBadges, getTodayStats } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
@@ -24,6 +24,7 @@ function DashboardContent() {
   const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [badgeCount, setBadgeCount] = useState(0);
+  const [todayStats, setTodayStats] = useState({ pomodoroSessions: 0, totalStudyTime: 0, tasksCompleted: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,17 +37,19 @@ function DashboardContent() {
     if (!user) return;
     setLoading(true);
     try {
-      const [tasks, stats, activities, badges] = await Promise.all([
+      const [tasks, stats, activities, badges, today] = await Promise.all([
         getUserTasks(user.id),
         getWeeklyStats(user.id),
         getRecentActivities(user.id, 5),
         getUserBadges(user.id),
+        getTodayStats(user.id),
       ]);
       
       setPendingTasksCount(tasks.filter((t: any) => !t.completed).length);
       setWeeklyStats(stats);
       setRecentActivities(activities);
       setBadgeCount(badges.length);
+      setTodayStats(today);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     } finally {
@@ -57,9 +60,24 @@ function DashboardContent() {
   if (!user) return null;
 
   const dailyGoals = [
-    { id: 1, title: "Complete 2 Pomodoro sessions", completed: false, xp: 100 },
-    { id: 2, title: `Finish 3 tasks (${pendingTasksCount} pending)`, completed: false, xp: 50 },
-    { id: 3, title: "Study for 1 hour", completed: false, xp: 75 },
+    { 
+      id: 1, 
+      title: `Complete 2 Pomodoro sessions (${todayStats.pomodoroSessions}/2)`, 
+      completed: todayStats.pomodoroSessions >= 2, 
+      xp: 100 
+    },
+    { 
+      id: 2, 
+      title: `Finish 3 tasks (${todayStats.tasksCompleted}/3)`, 
+      completed: todayStats.tasksCompleted >= 3, 
+      xp: 50 
+    },
+    { 
+      id: 3, 
+      title: `Study for 60 minutes (${todayStats.totalStudyTime}/60 min)`, 
+      completed: todayStats.totalStudyTime >= 60, 
+      xp: 75 
+    },
   ];
 
   const stats = [
