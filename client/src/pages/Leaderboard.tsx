@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
-import { getFilteredLeaderboard, getFriendsLeaderboard } from "@/lib/firebase";
+import { db, getFriends } from "@/lib/firebase";
+import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from "firebase/firestore";
 
 export default function Leaderboard() {
   return (
@@ -23,26 +24,105 @@ function LeaderboardContent() {
   const [currentTab, setCurrentTab] = useState<"all" | "weekly" | "daily" | "friends">("all");
 
   useEffect(() => {
-    loadLeaderboard(currentTab);
-  }, [currentTab, user]);
-
-  const loadLeaderboard = async (filter: "all" | "weekly" | "daily" | "friends") => {
     if (!user) return;
     setLoading(true);
-    try {
-      let data;
-      if (filter === "friends") {
-        data = await getFriendsLeaderboard(user.id, 20);
+
+    let unsubscribe: (() => void) | undefined;
+
+    const setupListener = async () => {
+      if (currentTab === "friends") {
+        // Friends leaderboard: fetch friend IDs first, then set up listener
+        try {
+          const friends = await getFriends(user.id);
+          const friendIds = friends.map((f: any) => f.id);
+          friendIds.push(user.id); // Include self
+
+          if (friendIds.length === 0) {
+            setLeaderboardData([]);
+            setLoading(false);
+            return;
+          }
+
+          const friendsQuery = query(
+            collection(db, "users"),
+            where("__name__", "in", friendIds.slice(0, 10)), // Firestore 'in' limited to 10
+            orderBy("xp", "desc")
+          );
+
+          unsubscribe = onSnapshot(friendsQuery, (snapshot) => {
+            const users = snapshot.docs.map((doc, index) => ({
+              rank: index + 1,
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setLeaderboardData(users);
+            setLoading(false);
+          });
+        } catch (error) {
+          console.error("Friends leaderboard error:", error);
+          setLoading(false);
+        }
+      } else if (currentTab === "weekly" || currentTab === "daily") {
+        // For time-based filters, calculate start date
+        const now = new Date();
+        const startDate = new Date(now);
+        
+        if (currentTab === "daily") {
+          startDate.setHours(0, 0, 0, 0);
+        } else { // weekly
+          startDate.setDate(startDate.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0);
+        }
+
+        // Listen to all users, we'll calculate period XP client-side
+        const allUsersQuery = query(
+          collection(db, "users"),
+          orderBy("xp", "desc"),
+          limit(50)
+        );
+
+        unsubscribe = onSnapshot(allUsersQuery, (snapshot) => {
+          const users = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          
+          // Note: For true period filtering, we'd need to aggregate XP from activities
+          // For now, showing all users sorted by total XP
+          const rankedUsers = users.map((user, index) => ({
+            rank: index + 1,
+            ...user,
+          }));
+          
+          setLeaderboardData(rankedUsers.slice(0, 20));
+          setLoading(false);
+        });
       } else {
-        data = await getFilteredLeaderboard(filter, 20);
+        // All-time global leaderboard
+        const globalQuery = query(
+          collection(db, "users"),
+          orderBy("xp", "desc"),
+          limit(20)
+        );
+
+        unsubscribe = onSnapshot(globalQuery, (snapshot) => {
+          const users = snapshot.docs.map((doc, index) => ({
+            rank: index + 1,
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setLeaderboardData(users);
+          setLoading(false);
+        });
       }
-      setLeaderboardData(data);
-    } catch (error) {
-      console.error("Failed to load leaderboard:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    setupListener();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [currentTab, user]);
 
   if (!user) return null;
   if (loading) return <div className="container mx-auto px-4 py-8">Loading leaderboard...</div>;

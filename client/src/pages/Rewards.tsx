@@ -1,8 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, Trophy, Flame, Star, Target, Zap, Lock } from "lucide-react";
+import { Award, Trophy, Flame, Star, Target, Zap, Lock, TrendingUp } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { getUserBadges, checkAndUnlockBadges } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Rewards() {
   return (
@@ -14,86 +17,131 @@ export default function Rewards() {
 
 function RewardsContent() {
   const { user } = useAuth();
+  const [userBadges, setUserBadges] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      loadBadges();
+      checkNewBadges();
+    }
+  }, [user]);
+
+  const loadBadges = async () => {
+    if (!user) return;
+    try {
+      const badges = await getUserBadges(user.id);
+      const badgeIds = new Set(badges.map((b: any) => b.badgeId));
+      setUserBadges(badgeIds);
+    } catch (error) {
+      console.error("Failed to load badges:", error);
+      toast({
+        title: "Error Loading Badges",
+        description: "Unable to load your badges. Please try refreshing the page.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkNewBadges = async () => {
+    if (!user) return;
+    try {
+      const newBadges = await checkAndUnlockBadges(user.id);
+      if (newBadges.length > 0) {
+        toast({
+          title: "New Badge Unlocked!",
+          description: `You unlocked ${newBadges.length} new badge(s)!`,
+        });
+        await loadBadges();
+      }
+    } catch (error) {
+      console.error("Failed to check badges:", error);
+    }
+  };
 
   if (!user) return null;
+  if (loading) return <div className="container mx-auto px-4 py-8">Loading rewards...</div>;
 
   const badges = [
     {
-      id: 1,
+      id: "first_focus",
       name: "First Focus",
       description: "Complete your first Pomodoro session",
       icon: Trophy,
-      unlocked: true,
+      unlocked: userBadges.has("first_focus"),
       requirement: "Complete 1 session",
       color: "text-yellow-500",
       bgColor: "bg-yellow-500/10",
     },
     {
-      id: 2,
+      id: "dedicated_learner",
       name: "Dedicated Learner",
       description: "Maintain a 7-day study streak",
       icon: Flame,
-      unlocked: true,
+      unlocked: userBadges.has("dedicated_learner"),
       requirement: "7 day streak",
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
     {
-      id: 3,
+      id: "task_master",
       name: "Task Master",
       description: "Complete 10 study tasks",
       icon: Target,
-      unlocked: true,
+      unlocked: userBadges.has("task_master"),
       requirement: "10 tasks completed",
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
-      id: 4,
+      id: "rising_star",
       name: "Rising Star",
       description: "Reach 500 total XP",
       icon: Star,
-      unlocked: user.xp >= 500,
+      unlocked: userBadges.has("rising_star"),
       requirement: "500 XP earned",
       color: "text-secondary",
       bgColor: "bg-secondary/10",
     },
     {
-      id: 5,
+      id: "focus_champion",
       name: "Focus Champion",
       description: "Complete 25 Pomodoro sessions",
       icon: Zap,
-      unlocked: false,
+      unlocked: userBadges.has("focus_champion"),
       requirement: "25 sessions completed",
       color: "text-accent",
       bgColor: "bg-accent/10",
     },
     {
-      id: 6,
+      id: "consistency_king",
       name: "Consistency King",
       description: "Maintain a 30-day study streak",
       icon: Flame,
-      unlocked: false,
+      unlocked: userBadges.has("consistency_king"),
       requirement: "30 day streak",
       color: "text-orange-600",
       bgColor: "bg-orange-600/10",
     },
     {
-      id: 7,
+      id: "xp_collector",
       name: "XP Collector",
       description: "Earn 2000 total XP",
       icon: Trophy,
-      unlocked: false,
+      unlocked: userBadges.has("xp_collector"),
       requirement: "2000 XP earned",
       color: "text-yellow-600",
       bgColor: "bg-yellow-600/10",
     },
     {
-      id: 8,
+      id: "master_learner",
       name: "Master Learner",
       description: "Reach Master level",
       icon: Award,
-      unlocked: user.level === "Master",
+      unlocked: userBadges.has("master_learner"),
       requirement: "Reach Master level",
       color: "text-purple-600",
       bgColor: "bg-purple-600/10",

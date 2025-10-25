@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Mail, Trophy, Flame, TrendingUp, Settings } from "lucide-react";
+import { User, Mail, Trophy, Flame, TrendingUp, Settings, Award, Lock } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import { getUserBadges, getRecentActivities } from "@/lib/firebase";
 
 export default function Profile() {
   return (
@@ -24,9 +25,40 @@ function ProfileContent() {
   const { user } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [badges, setBadges] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (user) {
+      loadProfileData();
+    }
+  }, [user]);
+
+  const loadProfileData = async () => {
+    if (!user) return;
+    try {
+      const [badgesData, activitiesData] = await Promise.all([
+        getUserBadges(user.id),
+        getRecentActivities(user.id, 5)
+      ]);
+      setBadges(badgesData);
+      setRecentActivities(activitiesData);
+    } catch (error) {
+      console.error("Failed to load profile data:", error);
+      toast({
+        title: "Error Loading Profile",
+        description: "Unable to load your badges and activities. Please try refreshing the page.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user) return null;
+  if (loading) return <div className="container mx-auto px-4 py-8">Loading profile...</div>;
 
   const handleSave = () => {
     toast({
@@ -41,13 +73,27 @@ function ProfileContent() {
     { label: "Level", value: user.level, icon: TrendingUp, color: "text-secondary" },
   ];
 
-  const xpHistory = [
-    { date: "Today", xp: 150, activities: "3 sessions, 2 tasks completed" },
-    { date: "Yesterday", xp: 200, activities: "4 sessions, 3 tasks completed" },
-    { date: "2 days ago", xp: 100, activities: "2 sessions, 1 task completed" },
-    { date: "3 days ago", xp: 175, activities: "3 sessions, 2 tasks completed" },
-    { date: "4 days ago", xp: 125, activities: "2 sessions, 2 tasks completed" },
-  ];
+  const badgeIcons: Record<string, any> = {
+    first_focus: Trophy,
+    dedicated_learner: Flame,
+    task_master: TrendingUp,
+    rising_star: Award,
+    focus_champion: Trophy,
+    consistency_king: Flame,
+    xp_collector: Trophy,
+    master_learner: Award,
+  };
+
+  const badgeNames: Record<string, string> = {
+    first_focus: "First Focus",
+    dedicated_learner: "Dedicated Learner",
+    task_master: "Task Master",
+    rising_star: "Rising Star",
+    focus_champion: "Focus Champion",
+    consistency_king: "Consistency King",
+    xp_collector: "XP Collector",
+    master_learner: "Master Learner",
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -153,32 +199,77 @@ function ProfileContent() {
             </CardContent>
           </Card>
 
-          {/* XP History */}
+          {/* Badges Showcase */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-primary" />
+                Your Badges
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {badges.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground">
+                  <Lock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>Complete achievements to unlock badges!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {badges.map((badge) => {
+                    const Icon = badgeIcons[badge.badgeId] || Award;
+                    return (
+                      <div
+                        key={badge.badgeId}
+                        className="flex flex-col items-center p-4 rounded-lg bg-muted/30 hover-elevate"
+                        data-testid={`badge-${badge.badgeId}`}
+                      >
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                          <Icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <p className="text-xs font-semibold text-center">
+                          {badgeNames[badge.badgeId] || badge.badgeId}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-primary" />
-                XP History
+                Recent Activity
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {xpHistory.map((entry, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover-elevate"
-                    data-testid={`xp-history-${index}`}
-                  >
-                    <div className="flex-1">
-                      <p className="font-semibold mb-1">{entry.date}</p>
-                      <p className="text-sm text-muted-foreground">{entry.activities}</p>
+              {recentActivities.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground">
+                  <Trophy className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No recent activity</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentActivities.map((activity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover-elevate"
+                      data-testid={`recent-activity-${index}`}
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold mb-1">{activity.text}</p>
+                        <p className="text-sm text-muted-foreground">{activity.time}</p>
+                      </div>
+                      <Badge variant="secondary" className="font-bold">
+                        +{activity.xp} XP
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="font-bold">
-                      +{entry.xp} XP
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
