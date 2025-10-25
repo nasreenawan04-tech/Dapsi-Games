@@ -196,3 +196,133 @@ export const unlockBadge = async (userId: string, badgeId: string) => {
   
   return false;
 };
+
+export const getWeeklyStats = async (userId: string) => {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  const pomodoroQuery = query(
+    collection(db, "pomodoroSessions"),
+    where("userId", "==", userId),
+    where("completedAt", ">=", Timestamp.fromDate(sevenDaysAgo)),
+    orderBy("completedAt", "asc")
+  );
+  
+  const tasksQuery = query(
+    collection(db, "tasks"),
+    where("userId", "==", userId),
+    where("completed", "==", true),
+    where("createdAt", ">=", Timestamp.fromDate(sevenDaysAgo)),
+    orderBy("createdAt", "asc")
+  );
+  
+  const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
+    getDocs(pomodoroQuery),
+    getDocs(tasksQuery)
+  ]);
+  
+  const dailyStats = new Map();
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    dailyStats.set(dateStr, {
+      date: dateStr,
+      studyTime: 0,
+      xpEarned: 0,
+      tasksCompleted: 0,
+    });
+  }
+  
+  pomodoroSnapshot.docs.forEach(doc => {
+    const data = doc.data();
+    const date = data.completedAt.toDate();
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const stats = dailyStats.get(dateStr);
+    if (stats) {
+      stats.studyTime += data.duration;
+      stats.xpEarned += data.xpEarned;
+    }
+  });
+  
+  tasksSnapshot.docs.forEach(doc => {
+    const data = doc.data();
+    const date = data.createdAt.toDate();
+    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const stats = dailyStats.get(dateStr);
+    if (stats) {
+      stats.tasksCompleted += 1;
+      stats.xpEarned += data.xpReward || 0;
+    }
+  });
+  
+  return Array.from(dailyStats.values());
+};
+
+export const getRecentActivities = async (userId: string, limitCount: number = 10) => {
+  const pomodoroQuery = query(
+    collection(db, "pomodoroSessions"),
+    where("userId", "==", userId),
+    orderBy("completedAt", "desc"),
+    limit(limitCount)
+  );
+  
+  const tasksQuery = query(
+    collection(db, "tasks"),
+    where("userId", "==", userId),
+    where("completed", "==", true),
+    orderBy("createdAt", "desc"),
+    limit(limitCount)
+  );
+  
+  const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
+    getDocs(pomodoroQuery),
+    getDocs(tasksQuery)
+  ]);
+  
+  const activities: any[] = [];
+  
+  pomodoroSnapshot.docs.forEach(doc => {
+    const data = doc.data();
+    activities.push({
+      type: "session",
+      text: `Completed ${data.duration}-min focus session`,
+      xp: data.xpEarned,
+      timestamp: data.completedAt.toDate(),
+    });
+  });
+  
+  tasksSnapshot.docs.forEach(doc => {
+    const data = doc.data();
+    activities.push({
+      type: "task",
+      text: `Finished ${data.title}`,
+      xp: data.xpReward,
+      timestamp: data.createdAt.toDate(),
+    });
+  });
+  
+  activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  
+  return activities.slice(0, limitCount).map(activity => {
+    const now = new Date();
+    const diff = now.getTime() - activity.timestamp.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    let timeAgo;
+    if (days > 0) {
+      timeAgo = days === 1 ? "1 day ago" : `${days} days ago`;
+    } else if (hours > 0) {
+      timeAgo = hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+    } else {
+      timeAgo = "Just now";
+    }
+    
+    return {
+      ...activity,
+      time: timeAgo,
+    };
+  });
+};

@@ -2,11 +2,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PomodoroTimer } from "@/components/PomodoroTimer";
 import { XPProgressBar } from "@/components/XPProgressBar";
+import { WeeklyProgressChart } from "@/components/WeeklyProgressChart";
 import { Trophy, Target, Flame, TrendingUp, Award, CheckCircle2 } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { getUserTasks } from "@/lib/firebase";
+import { getUserTasks, getWeeklyStats, getRecentActivities, getUserBadges } from "@/lib/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   return (
@@ -19,14 +21,38 @@ export default function Dashboard() {
 function DashboardContent() {
   const { user } = useAuth();
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
+  const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
-      getUserTasks(user.id).then(tasks => {
-        setPendingTasksCount(tasks.filter((t: any) => !t.completed).length);
-      });
+      loadDashboardData();
     }
   }, [user]);
+
+  const loadDashboardData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const [tasks, stats, activities, badges] = await Promise.all([
+        getUserTasks(user.id),
+        getWeeklyStats(user.id),
+        getRecentActivities(user.id, 5),
+        getUserBadges(user.id),
+      ]);
+      
+      setPendingTasksCount(tasks.filter((t: any) => !t.completed).length);
+      setWeeklyStats(stats);
+      setRecentActivities(activities);
+      setBadgeCount(badges.length);
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -36,17 +62,11 @@ function DashboardContent() {
     { id: 3, title: "Study for 1 hour", completed: false, xp: 75 },
   ];
 
-  const recentActivities = [
-    { type: "session", text: "Completed 25-min focus session", xp: 50, time: "2 hours ago" },
-    { type: "task", text: "Finished Math homework", xp: 10, time: "5 hours ago" },
-    { type: "badge", text: "Unlocked 'First Focus' badge", time: "1 day ago" },
-  ];
-
   const stats = [
     { label: "Total XP", value: user.xp.toLocaleString(), icon: Trophy, color: "text-primary" },
     { label: "Current Streak", value: `${user.streak} days`, icon: Flame, color: "text-orange-500" },
     { label: "Level", value: user.level, icon: TrendingUp, color: "text-secondary" },
-    { label: "Badges Earned", value: "3", icon: Award, color: "text-accent" },
+    { label: "Badges Earned", value: badgeCount.toString(), icon: Award, color: "text-accent" },
   ];
 
   return (
@@ -96,8 +116,8 @@ function DashboardContent() {
         {/* Pomodoro Timer */}
         <div className="lg:col-span-2">
           <PomodoroTimer
-            onComplete={(duration, xpEarned) => {
-              console.log(`Session completed: ${duration} min, ${xpEarned} XP`);
+            onComplete={async () => {
+              await loadDashboardData();
             }}
           />
         </div>
@@ -136,46 +156,72 @@ function DashboardContent() {
         </Card>
       </div>
 
+      {/* Weekly Progress Chart */}
+      {loading ? (
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <Skeleton className="h-80 w-full" />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="mb-8">
+          <WeeklyProgressChart data={weeklyStats} />
+        </div>
+      )}
+
       {/* Recent Activity */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate"
-                data-testid={`activity-${index}`}
-              >
-                <div className="flex items-center gap-3">
-                  {activity.type === "session" && (
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Trophy className="h-5 w-5 text-primary" />
+          {loading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : recentActivities.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No recent activity yet. Start a focus session or complete a task!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivities.map((activity, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate"
+                  data-testid={`activity-${index}`}
+                >
+                  <div className="flex items-center gap-3">
+                    {activity.type === "session" && (
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Trophy className="h-5 w-5 text-primary" />
+                      </div>
+                    )}
+                    {activity.type === "task" && (
+                      <div className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center">
+                        <CheckCircle2 className="h-5 w-5 text-secondary" />
+                      </div>
+                    )}
+                    {activity.type === "badge" && (
+                      <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                        <Award className="h-5 w-5 text-accent" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">{activity.text}</p>
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
                     </div>
-                  )}
-                  {activity.type === "task" && (
-                    <div className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center">
-                      <CheckCircle2 className="h-5 w-5 text-secondary" />
-                    </div>
-                  )}
-                  {activity.type === "badge" && (
-                    <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                      <Award className="h-5 w-5 text-accent" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-medium text-sm">{activity.text}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
                   </div>
+                  {activity.xp && (
+                    <Badge variant="outline">+{activity.xp} XP</Badge>
+                  )}
                 </div>
-                {activity.xp && (
-                  <Badge variant="outline">+{activity.xp} XP</Badge>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
