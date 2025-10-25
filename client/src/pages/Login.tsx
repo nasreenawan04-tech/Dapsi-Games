@@ -95,10 +95,8 @@ export default function Login() {
                   Remember me
                 </label>
               </div>
-              <Link href="/forgot-password">
-                <a className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
-                  Forgot password?
-                </a>
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                Forgot password?
               </Link>
             </div>
           </CardContent>
@@ -123,10 +121,8 @@ export default function Login() {
             </Button>
             <p className="text-sm text-center text-muted-foreground">
               Don't have an account?{" "}
-              <Link href="/signup">
-                <a className="text-primary hover:underline font-semibold" data-testid="link-signup">
-                  Sign up for free
-                </a>
+              <Link href="/signup" className="text-primary hover:underline font-semibold" data-testid="link-signup">
+                Sign up for free
               </Link>
             </p>
           </CardFooter>
