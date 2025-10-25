@@ -14,6 +14,11 @@ import { useAnalytics } from "@/hooks/use-analytics";
 import { AdSenseScript } from "@/components/AdSense";
 
 import Home from "@/pages/Home";
+import About from "@/pages/About";
+import Features from "@/pages/Features";
+import Pricing from "@/pages/Pricing";
+import Contact from "@/pages/Contact";
+import FAQ from "@/pages/FAQ";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ForgotPassword from "@/pages/ForgotPassword";
@@ -63,6 +68,11 @@ function Router() {
       )}
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/about" component={About} />
+        <Route path="/features" component={Features} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/faq" component={FAQ} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />

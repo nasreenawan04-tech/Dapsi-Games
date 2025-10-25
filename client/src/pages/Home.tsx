@@ -4,12 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    document.title = "DapsiGames - Gamified Study Platform | Study Smarter, Play Harder";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "Transform your study sessions into an epic adventure with DapsiGames. Earn XP, unlock badges, and compete with students worldwide. Join 10,000+ motivated learners.");
+    }
+    
     if (user) {
       setLocation("/dashboard");
     }
@@ -170,15 +177,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center text-muted-foreground">
-            <p>&copy; 2025 DapsiGames. All rights reserved.</p>
-            <p className="mt-2 text-sm">Study Smarter, Play Harder</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

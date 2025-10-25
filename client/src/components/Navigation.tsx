@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, LayoutDashboard, Trophy, ListTodo, Award, User, LogOut, Menu, X, Users, Users2, Activity, ShoppingBag } from "lucide-react";
+import { Home, LayoutDashboard, Trophy, ListTodo, Award, User, LogOut, Menu, X, Users, Users2, Activity, ShoppingBag, Info, Sparkles, DollarSign, Mail, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,15 @@ function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const publicNavItems = [
+    { href: "/", label: "Home" },
+    { href: "/about", label: "About" },
+    { href: "/features", label: "Features" },
+    { href: "/pricing", label: "Pricing" },
+    { href: "/contact", label: "Contact" },
+    { href: "/faq", label: "FAQ" },
+  ];
+
   if (!user) {
     return (
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -18,11 +27,29 @@ function Navigation() {
             <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
               D
             </div>
-            DapsiGames
+            <span className="hidden sm:inline">DapsiGames</span>
           </Link>
+
+          {/* Desktop Public Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {publicNavItems.map((item) => {
+              const isActive = location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    data-testid={`link-${item.label.toLowerCase()}`}
+                  >
+                    {item.label}
+                  </Button>
+                </Link>
+              );
+            })}
+          </div>
+
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/login">
+            <Link href="/login" className="hidden sm:inline-block">
               <Button variant="ghost" data-testid="button-login">
                 Log In
               </Button>
@@ -32,8 +59,62 @@ function Navigation() {
                 Start Free
               </Button>
             </Link>
+
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t bg-background p-4 animate-slide-up">
+            <div className="flex flex-col gap-2">
+              {publicNavItems.map((item) => {
+                const isActive = location === item.href;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <Button
+                      variant={isActive ? "secondary" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => setMobileMenuOpen(false)}
+                      data-testid={`link-mobile-${item.label.toLowerCase()}`}
+                    >
+                      {item.label}
+                    </Button>
+                  </Link>
+                );
+              })}
+              <div className="border-t my-2" />
+              <Link href="/login">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => setMobileMenuOpen(false)}
+                  data-testid="button-mobile-login"
+                >
+                  Log In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button
+                  className="w-full justify-start"
+                  onClick={() => setMobileMenuOpen(false)}
+                  data-testid="button-mobile-signup"
+                >
+                  Start Free
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
     );
   }
