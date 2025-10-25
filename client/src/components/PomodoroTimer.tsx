@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Pause, RotateCcw, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { recordPomodoroSession } from "@/lib/firebase";
 
 interface PomodoroTimerProps {
   onComplete?: (duration: number, xpEarned: number) => void;
@@ -14,6 +16,7 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  const { user, refreshUser } = useAuth();
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -39,17 +42,30 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
     };
   }, [isRunning, timeLeft]);
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsRunning(false);
     const xpEarned = duration === 25 ? 50 : 100;
     
-    toast({
-      title: "🎉 Session Complete!",
-      description: `Great job! You earned ${xpEarned} XP!`,
-    });
+    if (user) {
+      try {
+        await recordPomodoroSession(user.id, duration, xpEarned);
+        await refreshUser();
+        
+        toast({
+          title: "🎉 Session Complete!",
+          description: `Great job! You earned ${xpEarned} XP!`,
+        });
 
-    if (onComplete) {
-      onComplete(duration, xpEarned);
+        if (onComplete) {
+          onComplete(duration, xpEarned);
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to record session. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

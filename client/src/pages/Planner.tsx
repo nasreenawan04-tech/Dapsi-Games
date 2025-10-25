@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createTask, getUserTasks, updateTask, deleteTask as deleteTaskFromDB, completeTask } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Planner() {
   return (
@@ -19,13 +21,10 @@ export default function Planner() {
 }
 
 function PlannerContent() {
-  const { user } = useAuth();
-  const [tasks, setTasks] = useState([
-    { id: 1, title: "Complete Math Chapter 5", subject: "Mathematics", dueDate: "2025-01-30", completed: false, xpReward: 25 },
-    { id: 2, title: "Study for Chemistry Quiz", subject: "Science", dueDate: "2025-01-28", completed: false, xpReward: 30 },
-    { id: 3, title: "Write English Essay", subject: "English", dueDate: "2025-02-01", completed: true, xpReward: 40 },
-    { id: 4, title: "History Project Research", subject: "History", dueDate: "2025-02-05", completed: false, xpReward: 35 },
-  ]);
+  const { user, refreshUser } = useAuth();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -36,35 +35,91 @@ function PlannerContent() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      loadTasks();
+    }
+  }, [user]);
+
+  const loadTasks = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const userTasks = await getUserTasks(user.id);
+      setTasks(userTasks);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load tasks",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user) return null;
 
   const subjects = ["Mathematics", "Science", "English", "History", "Other"];
 
-  const toggleTask = (id: number) => {
-    setTasks(tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const toggleTask = async (taskId: string, currentStatus: boolean) => {
+    try {
+      if (!currentStatus) {
+        const xpEarned = await completeTask(taskId, user!.id);
+        await refreshUser();
+        toast({
+          title: "Task Completed! 🎉",
+          description: `You earned ${xpEarned} XP!`,
+        });
+      } else {
+        await updateTask(taskId, { completed: false });
+      }
+      await loadTasks();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update task",
+        variant: "destructive",
+      });
+    }
   };
 
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const deleteTaskHandler = async (taskId: string) => {
+    try {
+      await deleteTaskFromDB(taskId);
+      await loadTasks();
+      toast({
+        title: "Task Deleted",
+        description: "The task has been removed",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete task",
+        variant: "destructive",
+      });
+    }
   };
 
-  const addTask = () => {
-    if (!newTask.title) return;
+  const addTask = async () => {
+    if (!newTask.title || !user) return;
 
-    const task = {
-      id: Date.now(),
-      title: newTask.title,
-      subject: newTask.subject || "Other",
-      dueDate: newTask.dueDate,
-      completed: false,
-      xpReward: newTask.xpReward,
-    };
-
-    setTasks([...tasks, task]);
-    setNewTask({ title: "", subject: "", dueDate: "", xpReward: 10 });
-    setDialogOpen(false);
+    try {
+      await createTask(user.id, newTask);
+      await loadTasks();
+      setNewTask({ title: "", subject: "", dueDate: "", xpReward: 10 });
+      setDialogOpen(false);
+      toast({
+        title: "Task Created",
+        description: "New task added successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create task",
+        variant: "destructive",
+      });
+    }
   };
 
   const pendingTasks = tasks.filter(t => !t.completed);
@@ -191,7 +246,7 @@ function PlannerContent() {
                   data-testid={`task-${task.id}`}
                 >
                   <button
-                    onClick={() => toggleTask(task.id)}
+                    onClick={() => toggleTask(task.id, task.completed)}
                     className="flex-shrink-0"
                     data-testid={`button-toggle-task-${task.id}`}
                   >
@@ -203,10 +258,10 @@ function PlannerContent() {
                       <Badge variant="outline" className="text-xs">
                         {task.subject}
                       </Badge>
-                      {task.dueDate && (
+                      {task.dueDate && task.dueDate.toDate && (
                         <Badge variant="secondary" className="text-xs gap-1">
                           <Calendar className="h-3 w-3" />
-                          {new Date(task.dueDate).toLocaleDateString()}
+                          {task.dueDate.toDate().toLocaleDateString()}
                         </Badge>
                       )}
                       <Badge className="text-xs gap-1">
@@ -218,7 +273,7 @@ function PlannerContent() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteTask(task.id)}
+                    onClick={() => deleteTaskHandler(task.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     data-testid={`button-delete-task-${task.id}`}
                   >
@@ -249,7 +304,7 @@ function PlannerContent() {
                   data-testid={`task-completed-${task.id}`}
                 >
                   <button
-                    onClick={() => toggleTask(task.id)}
+                    onClick={() => toggleTask(task.id, task.completed)}
                     className="flex-shrink-0"
                     data-testid={`button-toggle-task-${task.id}`}
                   >
@@ -272,7 +327,7 @@ function PlannerContent() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => deleteTask(task.id)}
+                    onClick={() => deleteTaskHandler(task.id)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                     data-testid={`button-delete-task-${task.id}`}
                   >

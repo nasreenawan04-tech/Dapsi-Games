@@ -3,11 +3,13 @@
 ## Overview
 DapsiGames is a comprehensive study and productivity application that transforms studying into a gamified experience for students. It rewards users with XP points, badges, and leaderboard rankings for completing study tasks, staying focused, and meeting goals.
 
+**Tagline**: "Study Smarter, Play Harder"
+
 ## Tech Stack
 - **Frontend**: React 19 with TypeScript, Wouter (routing), TailwindCSS
-- **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL (planned) / In-memory storage (current)
-- **Authentication**: Firebase Auth (planned)
+- **Backend**: Express.js with TypeScript, Firebase
+- **Database**: Firebase Firestore (real-time NoSQL)
+- **Authentication**: Firebase Auth (email/password)
 - **State Management**: React Context API, TanStack Query
 - **UI Components**: Shadcn UI with Radix primitives
 
@@ -27,9 +29,10 @@ DapsiGames is a comprehensive study and productivity application that transforms
 ## Key Features
 
 ### 1. Authentication System
-- Email/password signup and login
-- Password reset functionality
-- Session persistence
+- Firebase email/password authentication
+- Real-time auth state management with onAuthStateChanged
+- Password reset via Firebase
+- Session persistence across browser refreshes
 - Protected routes for authenticated users
 
 ### 2. Gamified Dashboard
@@ -38,6 +41,7 @@ DapsiGames is a comprehensive study and productivity application that transforms
 - Daily goals tracker
 - Recent activity feed
 - Quick stats cards (Total XP, Streak, Level, Badges)
+- Real-time pending tasks counter
 
 ### 3. Pomodoro Focus Timer
 - Customizable durations (25 or 50 minutes)
@@ -45,14 +49,16 @@ DapsiGames is a comprehensive study and productivity application that transforms
 - Start/Pause/Reset controls
 - Automatic XP rewards on completion (50 XP for 25min, 100 XP for 50min)
 - Visual feedback with gradient animations
+- **Firebase Integration**: Records sessions to Firestore and updates user XP
 
 ### 4. Study Planner
 - Task CRUD operations (Create, Read, Update, Delete)
 - Subject categorization
-- Due date tracking
+- Due date tracking with Firestore timestamps
 - XP rewards per task
 - Completion status tracking
 - Pending vs. Completed task views
+- **Firebase Integration**: All tasks stored in Firestore, real-time sync
 
 ### 5. Real-time Leaderboard
 - Global rankings by total XP
@@ -60,6 +66,7 @@ DapsiGames is a comprehensive study and productivity application that transforms
 - User position highlighting
 - Avatar system with fallbacks
 - Streak and level displays
+- **Firebase Integration**: Queries Firestore users collection ordered by XP
 
 ### 6. Badges & Rewards System
 - Achievement tracking (8 different badges)
@@ -75,58 +82,53 @@ DapsiGames is a comprehensive study and productivity application that transforms
 - Theme customization (Light/Dark mode)
 - Avatar display
 
-## Data Models
+## Firebase Collections
 
-### User
+### users
 ```typescript
 {
-  id: string
+  id: string (Firebase UID)
   email: string
-  password: string (hashed)
   name: string
-  avatar?: string
   xp: number (default: 0)
   level: string (Novice/Scholar/Master)
   streak: number (default: 0)
-  lastActive: timestamp
-  createdAt: timestamp
+  lastActive: Timestamp
+  createdAt: Timestamp
 }
 ```
 
-### Task
+### tasks
 ```typescript
 {
-  id: string
-  userId: string
+  id: string (auto-generated)
+  userId: string (Firebase UID)
   title: string
-  subject?: string
-  dueDate?: timestamp
-  completed: boolean (default: false)
-  xpReward: number (default: 10)
-  createdAt: timestamp
+  subject: string
+  dueDate: Timestamp | null
+  completed: boolean
+  xpReward: number
+  createdAt: Timestamp
 }
 ```
 
-### PomodoroSession
+### pomodoroSessions
 ```typescript
 {
-  id: string
-  userId: string
+  id: string (auto-generated)
+  userId: string (Firebase UID)
   duration: number (25 or 50)
   xpEarned: number
-  completedAt: timestamp
+  completedAt: Timestamp
 }
 ```
 
-### Badge
+### userBadges
 ```typescript
 {
-  id: string
-  name: string
-  description: string
-  icon: string
-  requirement: number
-  type: string
+  userId: string (Firebase UID)
+  badgeId: string
+  unlockedAt: Timestamp
 }
 ```
 
@@ -138,20 +140,22 @@ DapsiGames is a comprehensive study and productivity application that transforms
 │   │   │   ├── Navigation.tsx         # Main navigation with mobile menu
 │   │   │   ├── ThemeProvider.tsx      # Dark mode implementation
 │   │   │   ├── ThemeToggle.tsx        # Theme switch button
-│   │   │   ├── PomodoroTimer.tsx      # Focus timer component
+│   │   │   ├── PomodoroTimer.tsx      # Focus timer with Firebase integration
 │   │   │   ├── XPProgressBar.tsx      # Level progression display
 │   │   │   ├── ProtectedRoute.tsx     # Auth guard wrapper
 │   │   │   └── ui/                    # Shadcn components
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx        # Authentication state
+│   │   │   └── AuthContext.tsx        # Firebase Auth state management
+│   │   ├── lib/
+│   │   │   └── firebase.ts            # Firebase SDK setup & helper functions
 │   │   ├── pages/
 │   │   │   ├── Home.tsx               # Landing page
-│   │   │   ├── Login.tsx              # Login form
-│   │   │   ├── Signup.tsx             # Registration form
-│   │   │   ├── ForgotPassword.tsx     # Password reset
+│   │   │   ├── Login.tsx              # Firebase login form
+│   │   │   ├── Signup.tsx             # Firebase registration form
+│   │   │   ├── ForgotPassword.tsx     # Firebase password reset
 │   │   │   ├── Dashboard.tsx          # Main user dashboard
-│   │   │   ├── Leaderboard.tsx        # Global rankings
-│   │   │   ├── Planner.tsx            # Task management
+│   │   │   ├── Leaderboard.tsx        # Firestore-powered rankings
+│   │   │   ├── Planner.tsx            # Firestore task management
 │   │   │   ├── Rewards.tsx            # Badge showcase
 │   │   │   └── Profile.tsx            # User settings
 │   │   ├── App.tsx                    # Root component with routing
@@ -159,19 +163,29 @@ DapsiGames is a comprehensive study and productivity application that transforms
 │   │   └── main.tsx                   # Entry point
 │   └── index.html                     # HTML template with SEO meta tags
 ├── server/
-│   ├── routes.ts                      # API endpoints (to be implemented)
-│   ├── storage.ts                     # Data persistence interface
+│   ├── routes.ts                      # API endpoints (minimal, Firebase handles most)
+│   ├── storage.ts                     # Storage interface
 │   └── index.ts                       # Express server setup
 ├── shared/
 │   └── schema.ts                      # Shared TypeScript types & Zod schemas
 └── design_guidelines.md               # Design system documentation
 ```
 
+## Firebase Configuration
+Environment variables required (already configured):
+- `VITE_FIREBASE_API_KEY` - Firebase API key
+- `VITE_FIREBASE_APP_ID` - Firebase App ID
+- `VITE_FIREBASE_PROJECT_ID` - Firebase Project ID
+
+Firebase auto-generates:
+- `authDomain`: `{PROJECT_ID}.firebaseapp.com`
+- `storageBucket`: `{PROJECT_ID}.firebasestorage.app`
+
 ## Routes
 - `/` - Public landing page
-- `/login` - Authentication page
-- `/signup` - Registration page
-- `/forgot-password` - Password reset
+- `/login` - Firebase authentication page
+- `/signup` - Firebase registration page
+- `/forgot-password` - Firebase password reset
 - `/dashboard` - Main dashboard (protected)
 - `/leaderboard` - Global rankings (protected)
 - `/planner` - Task management (protected)
@@ -190,6 +204,8 @@ DapsiGames is a comprehensive study and productivity application that transforms
 - **Scholar**: 500 - 1,999 XP
 - **Master**: 2,000+ XP
 
+Levels are calculated dynamically based on XP and updated in Firestore.
+
 ## Badges Available
 1. **First Focus** - Complete first Pomodoro session
 2. **Dedicated Learner** - 7-day study streak
@@ -202,7 +218,7 @@ DapsiGames is a comprehensive study and productivity application that transforms
 
 ## Implementation Status
 
-### Phase 1: Foundation & Core UI (COMPLETED)
+### Phase 1: Foundation & Core UI (✅ COMPLETED)
 ✅ Complete data schema with TypeScript types
 ✅ Design system configuration (colors, typography, animations)
 ✅ Theme provider with light/dark mode
@@ -215,40 +231,76 @@ DapsiGames is a comprehensive study and productivity application that transforms
 ✅ Smooth animations and transitions
 ✅ Mobile-responsive design
 
-### Phase 2: Backend Implementation (PENDING)
-- Firebase Authentication integration
-- Firestore database setup
-- API endpoints for all features
-- Session management
-- XP calculation logic
-- Real-time leaderboard updates
+### Phase 2: Firebase Integration (✅ COMPLETED)
+✅ Firebase SDK installation and configuration
+✅ Firebase Authentication setup (email/password)
+✅ AuthContext with onAuthStateChanged listener
+✅ Firestore database integration
+✅ User profile creation on signup
+✅ Pomodoro session recording with XP updates
+✅ Task CRUD operations with Firestore
+✅ Real-time leaderboard from Firestore
+✅ User XP refresh functionality
+✅ Firebase Timestamp handling
 
-### Phase 3: Integration & Testing (PENDING)
-- Connect frontend to backend APIs
-- Real-time data synchronization
-- Error handling and loading states
-- Form validation
-- End-to-end testing
+### Phase 3: Testing & Polishing (PENDING)
+- End-to-end testing of all Firebase features
+- Error handling improvements
+- Loading states optimization
+- Badge unlock automation
+- Streak calculation logic
 - Performance optimization
+- Final visual polish
+
+## Firebase Helper Functions (client/src/lib/firebase.ts)
+
+### Authentication
+- `signUpWithEmail(email, password, name)` - Creates user + Firestore profile
+- `signInWithEmail(email, password)` - Authenticates user
+- `logOut()` - Signs out user
+- `resetPassword(email)` - Sends password reset email
+
+### User Management
+- `getUserProfile(userId)` - Fetches user document from Firestore
+- `updateUserXP(userId, xpToAdd)` - Adds XP and recalculates level
+
+### Task Management
+- `createTask(userId, task)` - Creates new task in Firestore
+- `getUserTasks(userId)` - Fetches user's tasks
+- `updateTask(taskId, updates)` - Updates existing task
+- `deleteTask(taskId)` - Deletes task
+- `completeTask(taskId, userId)` - Marks complete + awards XP
+
+### Pomodoro
+- `recordPomodoroSession(userId, duration, xpEarned)` - Records session + awards XP
+
+### Leaderboard
+- `getLeaderboard(limitCount)` - Gets top users ordered by XP
+
+### Badges
+- `getUserBadges(userId)` - Fetches unlocked badges
+- `unlockBadge(userId, badgeId)` - Unlocks new badge
 
 ## Development Commands
 ```bash
-npm run dev       # Start development server
+npm run dev       # Start development server (port 5000)
 npm run build     # Build for production
 npm run start     # Start production server
 ```
 
 ## Next Steps
-1. Set up Firebase project and obtain API credentials
-2. Implement authentication endpoints
-3. Create Firestore collections and indexes
-4. Connect Pomodoro timer to XP system
-5. Implement task management API
-6. Add real-time leaderboard functionality
-7. Implement badge unlock system
-8. Add comprehensive error handling
-9. Performance testing and optimization
-10. Deploy to production
+1. ✅ Firebase SDK and configuration
+2. ✅ Authentication flow implementation
+3. ✅ Firestore collections setup
+4. ✅ Pomodoro timer XP integration
+5. ✅ Task management with Firestore
+6. ✅ Real-time leaderboard
+7. Badge unlock automation
+8. Streak calculation logic
+9. Error handling improvements
+10. End-to-end testing
+11. Performance optimization
+12. Deploy to production
 
 ## User Preferences
 - Primary audience: Students aged 13-25
@@ -263,5 +315,6 @@ npm run start     # Start production server
 - Components follow Shadcn design patterns
 - Dark mode fully supported throughout
 - Animations use CSS transforms for performance
-- Images lazy-loaded where applicable
-- Font loading optimized with preconnect
+- Firebase handles real-time data synchronization
+- No backend API needed for most features (Firebase SDK in frontend)
+- Level calculation happens automatically on XP updates

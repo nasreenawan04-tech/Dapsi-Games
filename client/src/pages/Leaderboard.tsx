@@ -4,6 +4,8 @@ import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { getLeaderboard } from "@/lib/firebase";
 
 export default function Leaderboard() {
   return (
@@ -15,22 +17,26 @@ export default function Leaderboard() {
 
 function LeaderboardContent() {
   const { user } = useAuth();
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
+
+  const loadLeaderboard = async () => {
+    try {
+      const data = await getLeaderboard(20);
+      setLeaderboardData(data);
+    } catch (error) {
+      console.error("Failed to load leaderboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) return null;
-
-  // Mock leaderboard data
-  const leaderboardData = [
-    { rank: 1, name: "Alex Johnson", xp: 3500, level: "Master", streak: 45, avatar: "AJ" },
-    { rank: 2, name: "Sarah Williams", xp: 2800, level: "Scholar", streak: 32, avatar: "SW" },
-    { rank: 3, name: "Michael Chen", xp: 2400, level: "Scholar", streak: 28, avatar: "MC" },
-    { rank: 4, name: user.name, xp: user.xp, level: user.level, streak: user.streak, avatar: user.name[0] + (user.name.split(" ")[1]?.[0] || "") },
-    { rank: 5, name: "Emma Davis", xp: 1800, level: "Scholar", streak: 18, avatar: "ED" },
-    { rank: 6, name: "James Wilson", xp: 1500, level: "Scholar", streak: 15, avatar: "JW" },
-    { rank: 7, name: "Olivia Brown", xp: 1200, level: "Novice", streak: 12, avatar: "OB" },
-    { rank: 8, name: "Lucas Miller", xp: 950, level: "Novice", streak: 9, avatar: "LM" },
-    { rank: 9, name: "Sophia Garcia", xp: 800, level: "Novice", streak: 7, avatar: "SG" },
-    { rank: 10, name: "Noah Martinez", xp: 600, level: "Novice", streak: 5, avatar: "NM" },
-  ];
+  if (loading) return <div className="container mx-auto px-4 py-8">Loading leaderboard...</div>;
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-5 w-5 text-yellow-500" />;
@@ -66,7 +72,7 @@ function LeaderboardContent() {
               </div>
               <Avatar className="h-16 w-16 mx-auto mb-3 border-4 border-gray-400">
                 <AvatarFallback className="text-lg font-bold">
-                  {topThree[1].avatar}
+                  {topThree[1].name?.[0]}{topThree[1].name?.split(" ")[1]?.[0] || ""}
                 </AvatarFallback>
               </Avatar>
               <h3 className="font-bold text-lg mb-1">{topThree[1].name}</h3>
@@ -95,7 +101,7 @@ function LeaderboardContent() {
               </div>
               <Avatar className="h-20 w-20 mx-auto mb-3 border-4 border-yellow-500">
                 <AvatarFallback className="text-xl font-bold">
-                  {topThree[0].avatar}
+                  {topThree[0].name?.[0]}{topThree[0].name?.split(" ")[1]?.[0] || ""}
                 </AvatarFallback>
               </Avatar>
               <h3 className="font-bold text-xl mb-1">{topThree[0].name}</h3>
@@ -117,7 +123,7 @@ function LeaderboardContent() {
               </div>
               <Avatar className="h-16 w-16 mx-auto mb-3 border-4 border-orange-600">
                 <AvatarFallback className="text-lg font-bold">
-                  {topThree[2].avatar}
+                  {topThree[2].name?.[0]}{topThree[2].name?.split(" ")[1]?.[0] || ""}
                 </AvatarFallback>
               </Avatar>
               <h3 className="font-bold text-lg mb-1">{topThree[2].name}</h3>
@@ -156,7 +162,7 @@ function LeaderboardContent() {
                     {getRankIcon(entry.rank)}
                   </div>
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback>{entry.avatar}</AvatarFallback>
+                    <AvatarFallback>{entry.name?.[0]}{entry.name?.split(" ")[1]?.[0] || ""}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className={`font-semibold truncate ${isCurrentUser ? "text-primary" : ""}`}>

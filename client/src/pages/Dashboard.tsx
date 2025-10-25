@@ -5,6 +5,8 @@ import { XPProgressBar } from "@/components/XPProgressBar";
 import { Trophy, Target, Flame, TrendingUp, Award, CheckCircle2 } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { getUserTasks } from "@/lib/firebase";
 
 export default function Dashboard() {
   return (
@@ -16,12 +18,21 @@ export default function Dashboard() {
 
 function DashboardContent() {
   const { user } = useAuth();
+  const [pendingTasksCount, setPendingTasksCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      getUserTasks(user.id).then(tasks => {
+        setPendingTasksCount(tasks.filter((t: any) => !t.completed).length);
+      });
+    }
+  }, [user]);
 
   if (!user) return null;
 
   const dailyGoals = [
     { id: 1, title: "Complete 2 Pomodoro sessions", completed: false, xp: 100 },
-    { id: 2, title: "Finish 3 tasks", completed: false, xp: 50 },
+    { id: 2, title: `Finish 3 tasks (${pendingTasksCount} pending)`, completed: false, xp: 50 },
     { id: 3, title: "Study for 1 hour", completed: false, xp: 75 },
   ];
 

@@ -1,5 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import type { User } from "@shared/schema";
+import { auth, signUpWithEmail, signInWithEmail, logOut, resetPassword as firebaseResetPassword, getUserProfile } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  xp: number;
+  level: string;
+  streak: number;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -8,6 +18,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,76 +28,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const profile = await getUserProfile(firebaseUser.uid);
+        if (profile) {
+          setUser({
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: profile.name,
+            xp: profile.xp || 0,
+            level: profile.level || "Novice",
+            streak: profile.streak || 0,
+          });
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch("/api/auth/me");
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+  const refreshUser = async () => {
+    if (auth.currentUser) {
+      const profile = await getUserProfile(auth.currentUser.uid);
+      if (profile) {
+        setUser({
+          id: auth.currentUser.uid,
+          email: auth.currentUser.email || "",
+          name: profile.name,
+          xp: profile.xp || 0,
+          level: profile.level || "Novice",
+          streak: profile.streak || 0,
+        });
       }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Login failed");
-    }
-
-    const userData = await response.json();
-    setUser(userData);
+    await signInWithEmail(email, password);
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Signup failed");
-    }
-
-    const userData = await response.json();
-    setUser(userData);
+    await signUpWithEmail(email, password, name);
   };
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
+    await logOut();
   };
 
   const resetPassword = async (email: string) => {
-    const response = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Password reset failed");
-    }
+    await firebaseResetPassword(email);
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, signup, logout, resetPassword }}
+      value={{ user, loading, login, signup, logout, resetPassword, refreshUser }}
     >
       {children}
     </AuthContext.Provider>
