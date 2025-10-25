@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, Trophy, Flame, TrendingUp, Settings, Award, Lock } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { XPProgressBar } from "@/components/XPProgressBar";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserAvatar } from "@/components/UserAvatar";
+import { ThemeIndicator } from "@/components/ThemeIndicator";
 import { useToast } from "@/hooks/use-toast";
 import { getUserBadges, getRecentActivities } from "@/lib/firebase";
 
@@ -113,14 +114,13 @@ function ProfileContent() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-col items-center text-center">
-                <Avatar className="h-24 w-24 mb-4 border-4 border-primary">
-                  <AvatarFallback className="text-2xl font-bold">
-                    {user.name[0]}{user.name.split(" ")[1]?.[0] || ""}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar className="h-24 w-24 mb-4" showBorder={true} />
                 <h2 className="text-xl font-bold mb-1">{user.name}</h2>
                 <p className="text-sm text-muted-foreground mb-3">{user.email}</p>
-                <Badge className="mb-4">{user.level}</Badge>
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                  <Badge>{user.level}</Badge>
+                  <ThemeIndicator />
+                </div>
                 <XPProgressBar currentXP={user.xp} level={user.level} />
               </div>
             </CardContent>
