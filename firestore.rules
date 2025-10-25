@@ -1,0 +1,226 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for security
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow create only during signup with initial values
+      allow create: if isAuthenticated() && 
+                      isOwner(userId) &&
+                      request.resource.data.keys().hasAll(['email', 'name', 'xp', 'level', 'streak']) &&
+                      request.resource.data.xp == 0 &&
+                      request.resource.data.level == "Novice" &&
+                      request.resource.data.streak == 0;
+      
+      // Allow update only for safe fields (NOT xp, level, streak)
+      // XP, level, and streak can ONLY be updated via server (Admin SDK)
+      allow update: if isAuthenticated() && 
+                      isOwner(userId) &&
+                      // Only allow updating: name, avatar, theme, avatarBorder
+                      // Explicitly block: id, email, xp, level, streak, createdAt, lastActive
+                      (!request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['id', 'email', 'xp', 'level', 'streak', 'createdAt', 'lastActive']));
+      
+      // No deletion allowed from client
+      allow delete: if false;
+    }
+    
+    // Tasks collection
+    match /tasks/{taskId} {
+      // Allow read if authenticated and owner
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Allow create if authenticated, email verified, and proper data
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.userId) &&
+                      request.resource.data.keys().hasAll(['userId', 'title', 'completed', 'xpReward']) &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.completed == false &&
+                      request.resource.data.xpReward >= 1 &&
+                      request.resource.data.xpReward <= 1000;
+      
+      // Allow update only by owner
+      allow update: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(resource.data.userId) &&
+                      // Prevent userId and xpReward modification
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['userId', 'xpReward']));
+      
+      // Allow delete only by owner
+      allow delete: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(resource.data.userId);
+    }
+    
+    // Pomodoro sessions collection
+    match /pomodoroSessions/{sessionId} {
+      // Allow read if authenticated and owner
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Only allow creation from server (via admin SDK)
+      // Client should use API endpoint
+      allow create: if false;
+      
+      // No updates allowed
+      allow update: if false;
+      
+      // No deletion allowed
+      allow delete: if false;
+    }
+    
+    // User badges collection
+    match /userBadges/{badgeId} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Only server can create badges (via admin SDK)
+      allow create: if false;
+      
+      // No updates allowed
+      allow update: if false;
+      
+      // No deletion allowed
+      allow delete: if false;
+    }
+    
+    // Friend requests collection
+    match /friendRequests/{requestId} {
+      // Allow read if you're the sender or receiver
+      allow read: if isAuthenticated() && 
+                    (isOwner(resource.data.fromUserId) || 
+                     isOwner(resource.data.toUserId));
+      
+      // Allow create if authenticated and you're the sender
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.fromUserId) &&
+                      request.resource.data.fromUserId != request.resource.data.toUserId &&
+                      request.resource.data.status == "pending";
+      
+      // Allow update only if you're the receiver and only changing status
+      allow update: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(resource.data.toUserId) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                      (request.resource.data.status == "accepted" || 
+                       request.resource.data.status == "rejected");
+      
+      // No deletion from client
+      allow delete: if false;
+    }
+    
+    // Friends collection
+    match /friends/{friendshipId} {
+      // Allow read if you're one of the friends
+      allow read: if isAuthenticated() && 
+                    (isOwner(resource.data.userId) || 
+                     isOwner(resource.data.friendId));
+      
+      // Only server can create friendships (via admin SDK after accepting request)
+      allow create: if false;
+      
+      // No updates allowed
+      allow update: if false;
+      
+      // Allow delete only if you're one of the friends
+      allow delete: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      (isOwner(resource.data.userId) || 
+                       isOwner(resource.data.friendId));
+    }
+    
+    // Study groups collection
+    match /groups/{groupId} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow create if authenticated and email verified
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.creatorId) &&
+                      request.resource.data.keys().hasAll(['name', 'description', 'creatorId', 'memberCount']) &&
+                      request.resource.data.memberCount == 1;
+      
+      // Allow update only by creator
+      allow update: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(resource.data.creatorId);
+      
+      // Allow delete only by creator
+      allow delete: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(resource.data.creatorId);
+    }
+    
+    // Group members collection
+    match /groupMembers/{memberId} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow create if authenticated and joining as yourself
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.userId);
+      
+      // No direct updates (use API)
+      allow update: if false;
+      
+      // Allow delete if removing yourself
+      allow delete: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(resource.data.userId);
+    }
+    
+    // Purchases collection
+    match /purchases/{purchaseId} {
+      // Allow read if owner
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Only server can create purchases (via API)
+      allow create: if false;
+      
+      // No updates allowed
+      allow update: if false;
+      
+      // No deletion allowed
+      allow delete: if false;
+    }
+    
+    // Activities feed collection
+    match /activities/{activityId} {
+      // Allow read if owner
+      allow read: if isAuthenticated() && 
+                    isOwner(resource.data.userId);
+      
+      // Only server can create activities (via API)
+      allow create: if false;
+      
+      // No updates allowed
+      allow update: if false;
+      
+      // No deletion allowed
+      allow delete: if false;
+    }
+  }
+}
