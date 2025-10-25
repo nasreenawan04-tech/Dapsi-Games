@@ -116,34 +116,15 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV !== 'production',
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            // Split vendor code into smaller chunks
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react';
-            }
-            if (id.includes('firebase')) {
-              return 'vendor-firebase';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'vendor-radix';
-            }
-            if (id.includes('lucide-react') || id.includes('framer-motion')) {
-              return 'vendor-ui';
-            }
-            if (id.includes('react-hook-form') || id.includes('zod')) {
-              return 'vendor-forms';
-            }
-            if (id.includes('recharts')) {
-              return 'vendor-charts';
-            }
-            // All other vendor code
-            return 'vendor-misc';
-          }
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'wouter'],
+          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'ui': ['lucide-react', 'framer-motion'],
+          'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
         },
       },
     },
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 1000,
     minify: 'terser',
     terserOptions: {
       compress: {
