@@ -4,6 +4,24 @@
 DapsiGames is a comprehensive study and productivity application designed to transform studying into an engaging, gamified experience for students. It incentivizes users with XP points, badges, and leaderboard rankings for completing study tasks, maintaining focus, and achieving goals. The project aims to motivate students aged 13-25 by making learning more interactive and rewarding.
 
 ## Recent Changes
+### October 25, 2025 - Phase 6: Gamification Logic & Rewards (COMPLETED)
+- **Level-Up Celebrations**: Implemented visual level-up celebrations with confetti animations
+  - Created LevelUpModal component with confetti effects similar to BadgeUnlockModal
+  - Backend endpoints (/api/pomodoro/complete, /api/tasks/:taskId/complete) now return `leveledUp` boolean by comparing old vs new levels
+  - Integrated LevelUpModal in both PomodoroTimer and Planner components for seamless user experience
+  - Badge unlock notifications properly delayed to avoid clashing with level-up celebrations
+- **PDF Export for Study Planner**: Added comprehensive PDF export functionality
+  - Integrated jsPDF and jspdf-autotable libraries for professional PDF generation
+  - Export includes user info header, pending tasks table, completed tasks table, and branding footer
+  - Proper handling of Firestore timestamps and missing due dates
+  - Download button disabled when no tasks available
+- **Sound Packs in Virtual Store**: Expanded store inventory with ambient sound options
+  - Added 6 sound pack items: Rainfall Ambience (300 XP), Coffee Shop (300 XP), Forest Sounds (350 XP), Lo-fi Beats (400 XP), White Noise (250 XP), Ocean Waves (350 XP)
+  - Created dedicated "Sounds" tab in Store page alongside existing categories
+  - Sound packs use existing purchase pipeline and are purchasable with XP
+  - Each item includes descriptive icons and color-coded backgrounds
+- **System Integrity**: All Phase 6 features passed comprehensive architect review with no security issues or regressions in existing XP, badge, or task systems
+
 ### October 25, 2025 - Phase 5: Core Back-End Integration (COMPLETED)
 - **Secure Backend API Integration**: Implemented Express.js backend with Firebase Admin SDK for secure server-side operations
   - Set up Firebase Admin SDK with service account credentials (FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY)
