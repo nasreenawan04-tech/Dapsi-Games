@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -30,3 +30,5 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
+export default ProtectedRoute;
