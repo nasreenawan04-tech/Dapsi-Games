@@ -5,7 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 
-function Navigation() {
+export function Navigation() {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -155,5 +155,3 @@ function Navigation() {
     </nav>
   );
 }
-
-export default Navigation;
