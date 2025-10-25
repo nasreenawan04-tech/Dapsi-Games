@@ -1,0 +1,19 @@
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Disallow private/protected pages
+Disallow: /dashboard
+Disallow: /planner
+Disallow: /profile
+Disallow: /activity
+Disallow: /rewards
+Disallow: /store
+Disallow: /leaderboard
+Disallow: /friends
+Disallow: /groups
+Disallow: /subscribe
+Disallow: /verify-email
+
+# Sitemap location
+Sitemap: https://dapsigames.com/sitemap.xml
