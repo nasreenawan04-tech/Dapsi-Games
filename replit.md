@@ -61,26 +61,66 @@ DapsiGames is a comprehensive study and productivity application that transforms
 - **Firebase Integration**: All tasks stored in Firestore, real-time sync
 
 ### 5. Real-time Leaderboard
-- Global rankings by total XP
+- Global rankings by total XP with multiple filter modes:
+  - **All Time**: Overall leaderboard across all users
+  - **Weekly**: Top performers in the last 7 days
+  - **Daily**: Today's leaders based on recent activity
+  - **Friends**: Leaderboard filtered to show only your friends
+- Tab-based UI with Radix UI Tabs for smooth filtering
 - Top 3 podium display with animations
 - User position highlighting
 - Avatar system with fallbacks
 - Streak and level displays
-- **Firebase Integration**: Queries Firestore users collection ordered by XP
+- **Firebase Integration**: Dynamic Firestore queries based on timeframe and friend lists
 
 ### 6. Badges & Rewards System
 - Achievement tracking (8 different badges)
+- **Automated badge unlocking** - badges unlock automatically when milestones are reached
+- Real-time toast notifications when new badges are unlocked
 - Unlocked vs. Locked badge displays
-- Progress percentage
+- Progress percentage tracking
 - Badge categories: Focus, Consistency, XP Collection, Mastery
 - Visual feedback with icons and colors
+- **Firebase Integration**: Badge unlock logic integrated into Pomodoro timer and task completion
 
 ### 7. User Profile
 - Account information management
 - XP history tracking
-- Statistics display
+- Statistics display (Total XP, Streak, Level)
 - Theme customization (Light/Dark mode)
 - Avatar display
+- Badge showcase
+- Daily streak tracking with visual indicators
+
+### 8. Friend System
+- Search for other students by name or email
+- Send and receive friend requests
+- Accept/reject friend requests
+- Manage friend list (add/remove friends)
+- Friend-specific leaderboard to compete with friends
+- View friends' XP, level, and badges
+- Three-tab interface: My Friends, Requests, Find Friends
+- **Firebase Integration**: Real-time friend lists and friend request management
+
+### 9. Study Groups
+- Create study groups with custom names and descriptions
+- Join existing groups to study with others
+- Group member management (admin/member roles)
+- Group leaderboards showing all members' XP rankings
+- Leave groups functionality
+- Admin indicators (crown icons for group creators)
+- Member count and role badges
+- Two-tab interface: My Groups, Discover Groups
+- **Firebase Integration**: Real-time group data and XP aggregation
+
+### 10. Activity Feed
+- Global feed showing recent study activities from all users
+- Real-time updates (auto-refresh every 30 seconds)
+- Activity types: Pomodoro sessions completed, tasks finished
+- Shows user name, activity description, XP earned, and time
+- Visual icons for different activity types
+- Latest 30 activities displayed
+- **Firebase Integration**: Queries activities collection with real-time listeners
 
 ## Firebase Collections
 
@@ -94,6 +134,7 @@ DapsiGames is a comprehensive study and productivity application that transforms
   level: string (Novice/Scholar/Master)
   streak: number (default: 0)
   lastActive: Timestamp
+  lastStreakUpdate: Timestamp
   createdAt: Timestamp
 }
 ```
@@ -129,6 +170,62 @@ DapsiGames is a comprehensive study and productivity application that transforms
   userId: string (Firebase UID)
   badgeId: string
   unlockedAt: Timestamp
+}
+```
+
+### friends
+```typescript
+{
+  id: string (auto-generated)
+  userId: string (Firebase UID)
+  friendId: string (Firebase UID)
+  createdAt: Timestamp
+}
+```
+
+### friendRequests
+```typescript
+{
+  id: string (auto-generated)
+  fromUserId: string (Firebase UID)
+  toUserId: string (Firebase UID)
+  status: "pending" | "accepted" | "rejected"
+  createdAt: Timestamp
+}
+```
+
+### studyGroups
+```typescript
+{
+  id: string (auto-generated)
+  name: string
+  description: string
+  createdBy: string (Firebase UID)
+  memberCount: number
+  createdAt: Timestamp
+}
+```
+
+### groupMembers
+```typescript
+{
+  id: string (auto-generated)
+  groupId: string
+  userId: string (Firebase UID)
+  role: "admin" | "member"
+  joinedAt: Timestamp
+}
+```
+
+### activities
+```typescript
+{
+  id: string (auto-generated)
+  userId: string (Firebase UID)
+  type: "session" | "task" | "badge"
+  text: string
+  xp: number
+  createdAt: Timestamp
 }
 ```
 
@@ -187,8 +284,11 @@ Firebase auto-generates:
 - `/signup` - Firebase registration page
 - `/forgot-password` - Firebase password reset
 - `/dashboard` - Main dashboard (protected)
-- `/leaderboard` - Global rankings (protected)
 - `/planner` - Task management (protected)
+- `/leaderboard` - Global rankings with filters (protected)
+- `/friends` - Friend system and friend leaderboard (protected)
+- `/groups` - Study groups and group challenges (protected)
+- `/activity` - Global activity feed (protected)
 - `/rewards` - Badge collection (protected)
 - `/profile` - User settings (protected)
 
@@ -243,14 +343,26 @@ Levels are calculated dynamically based on XP and updated in Firestore.
 ✅ User XP refresh functionality
 ✅ Firebase Timestamp handling
 
-### Phase 3: Testing & Polishing (PENDING)
+### Phase 3: Gamification & Social Features (✅ COMPLETED)
+✅ Automated badge unlocking system
+✅ Streak calculation and daily check-ins on login
+✅ Enhanced leaderboard with multiple filter modes (All Time, Weekly, Daily, Friends)
+✅ Friend system with requests, acceptance, and friend management
+✅ Friend-specific leaderboard
+✅ Study groups with creation, joining, and group leaderboards
+✅ Global activity feed showing real-time user activities
+✅ Toast notifications for badge unlocks
+✅ Integration of social features into navigation
+✅ Enhanced Firebase helper functions (20+ new functions)
+
+### Phase 4: Testing & Final Polishing (PENDING)
 - End-to-end testing of all Firebase features
-- Error handling improvements
+- Error handling improvements for offline scenarios
 - Loading states optimization
-- Badge unlock automation
-- Streak calculation logic
-- Performance optimization
-- Final visual polish
+- Performance optimization for large datasets
+- Final visual polish and animations
+- User onboarding flow
+- Help documentation and tooltips
 
 ## Firebase Helper Functions (client/src/lib/firebase.ts)
 
@@ -263,6 +375,7 @@ Levels are calculated dynamically based on XP and updated in Firestore.
 ### User Management
 - `getUserProfile(userId)` - Fetches user document from Firestore
 - `updateUserXP(userId, xpToAdd)` - Adds XP and recalculates level
+- `calculateStreak(userId)` - Updates daily streak on login
 
 ### Task Management
 - `createTask(userId, task)` - Creates new task in Firestore
@@ -276,10 +389,35 @@ Levels are calculated dynamically based on XP and updated in Firestore.
 
 ### Leaderboard
 - `getLeaderboard(limitCount)` - Gets top users ordered by XP
+- `getWeeklyLeaderboard(limitCount)` - Gets weekly top performers
+- `getDailyLeaderboard(limitCount)` - Gets today's top performers
+- `getFriendsLeaderboard(userId, limitCount)` - Gets friend-only leaderboard
 
 ### Badges
 - `getUserBadges(userId)` - Fetches unlocked badges
 - `unlockBadge(userId, badgeId)` - Unlocks new badge
+- `checkAndUnlockBadges(userId)` - Automatically checks and unlocks eligible badges
+
+### Friends
+- `searchUsers(query)` - Search for users by name or email
+- `sendFriendRequest(fromUserId, toUserId)` - Send a friend request
+- `getFriendRequests(userId)` - Get pending friend requests
+- `acceptFriendRequest(requestId, fromUserId, toUserId)` - Accept request
+- `rejectFriendRequest(requestId)` - Reject request
+- `getFriends(userId)` - Get user's friend list
+- `removeFriend(userId, friendId)` - Remove a friend
+
+### Study Groups
+- `createStudyGroup(userId, name, description)` - Create a new study group
+- `joinStudyGroup(userId, groupId)` - Join an existing group
+- `leaveStudyGroup(userId, groupId)` - Leave a group
+- `getUserGroups(userId)` - Get user's groups
+- `getAllGroups(limitCount)` - Get all available groups
+- `getGroupLeaderboard(groupId)` - Get group member leaderboard
+
+### Activity Feed
+- `recordActivity(userId, type, text, xp)` - Record a user activity
+- `getGlobalActivityFeed(limitCount)` - Get recent global activities
 
 ## Development Commands
 ```bash

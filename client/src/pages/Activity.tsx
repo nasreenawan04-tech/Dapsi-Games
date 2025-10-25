@@ -1,11 +1,12 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Activity as ActivityIcon, Trophy, CheckCircle, Clock } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { getGlobalActivityFeed } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
+import { collection, query, orderBy, limit, onSnapshot, doc, getDoc } from "firebase/firestore";
 
 export default function Activity() {
   return (
@@ -21,21 +22,48 @@ function ActivityContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadActivities();
-    const interval = setInterval(loadActivities, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const activitiesQuery = query(
+      collection(db, "activities"),
+      orderBy("createdAt", "desc"),
+      limit(30)
+    );
 
-  const loadActivities = async () => {
-    try {
-      const data = await getGlobalActivityFeed(30);
-      setActivities(data);
-    } catch (error) {
-      console.error("Failed to load activity feed:", error);
-    } finally {
+    const unsubscribe = onSnapshot(activitiesQuery, async (snapshot) => {
+      const activitiesData = await Promise.all(
+        snapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          const userDoc = await getDoc(doc(db, "users", data.userId));
+          const userData = userDoc.data();
+          
+          const now = new Date();
+          const createdAt = data.createdAt?.toDate() || now;
+          const diffMs = now.getTime() - createdAt.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          
+          let timeAgo = "just now";
+          if (diffDays > 0) timeAgo = `${diffDays}d ago`;
+          else if (diffHours > 0) timeAgo = `${diffHours}h ago`;
+          else if (diffMins > 0) timeAgo = `${diffMins}m ago`;
+
+          return {
+            id: docSnapshot.id,
+            userId: data.userId,
+            userName: userData?.name || "Unknown User",
+            type: data.type,
+            text: data.text,
+            xp: data.xp,
+            time: timeAgo,
+          };
+        })
+      );
+      setActivities(activitiesData);
       setLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   if (!user) return null;
   if (loading) return <div className="container mx-auto px-4 py-8">Loading activities...</div>;
@@ -63,7 +91,7 @@ function ActivityContent() {
           <Card>
             <CardContent className="p-12 text-center">
               <ActivityIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No activity yet</h3>
+              <h3 className="text-xl font-semibold mb-2" data-testid="text-no-activities">No activity yet</h3>
               <p className="text-muted-foreground">
                 Be the first to complete a study session or task!
               </p>
@@ -72,23 +100,23 @@ function ActivityContent() {
         ) : (
           <div className="space-y-3">
             {activities.map((activity, index) => (
-              <Card key={index} className="hover-elevate transition-all">
+              <Card key={index} className="hover-elevate transition-all" data-testid={`card-activity-${index}`}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <div className="mt-1">
                       {getActivityIcon(activity.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm">
+                      <p className="text-sm" data-testid={`text-activity-description-${index}`}>
                         <span className="font-semibold">{activity.userName}</span>
                         {" "}
                         <span className="text-muted-foreground">{activity.text}</span>
                       </p>
                       <div className="flex items-center gap-3 mt-1">
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs" data-testid={`badge-activity-xp-${index}`}>
                           +{activity.xp} XP
                         </Badge>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1" data-testid={`text-activity-time-${index}`}>
                           <Clock className="h-3 w-3" />
                           {activity.time}
                         </span>
