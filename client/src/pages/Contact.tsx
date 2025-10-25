@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Mail, MessageSquare, Send } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function Contact() {
   const [name, setName] = useState("");
@@ -15,14 +16,6 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    document.title = "Contact Us - DapsiGames | Get in Touch";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Have questions or feedback? Contact the DapsiGames team. We're here to help you succeed with our gamified study platform.");
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +37,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="Contact Us"
+        description="Have questions or feedback? Contact the DapsiGames team. We typically respond within 24 hours. Reach us at hello@dapsigames.com or support@dapsigames.com for technical help."
+        keywords="contact dapsigames, customer support, technical help, feedback, questions"
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="container mx-auto px-4">

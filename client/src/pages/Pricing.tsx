@@ -1,18 +1,11 @@
-import { useEffect } from "react";
 import { Check, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function Pricing() {
-  useEffect(() => {
-    document.title = "Pricing - DapsiGames | Affordable Study Platform";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Choose the perfect plan for your study needs. Start free or upgrade to Premium for $5/month. No hidden fees, cancel anytime.");
-    }
-  }, []);
 
   const plans = [
     {
@@ -60,6 +53,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="Pricing"
+        description="Choose the perfect plan for your study needs. Start free with unlimited features or upgrade to Premium for $5/month. No hidden fees, student-friendly pricing, cancel anytime."
+        keywords="pricing, study app pricing, premium features, student pricing, affordable study platform, subscription plans"
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="container mx-auto px-4">

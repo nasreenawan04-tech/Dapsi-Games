@@ -1,16 +1,9 @@
-import { useEffect } from "react";
 import { Users, Target, Heart, Rocket } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function About() {
-  useEffect(() => {
-    document.title = "About Us - DapsiGames | Gamified Study Platform";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Learn about DapsiGames' mission to transform studying into an engaging, gamified experience for students worldwide.");
-    }
-  }, []);
 
   const values = [
     {
@@ -37,6 +30,11 @@ export default function About() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="About Us"
+        description="Learn about DapsiGames' mission to revolutionize education through gamification. We're helping over 10,000 students worldwide transform studying into an engaging, productive adventure."
+        keywords="about dapsigames, gamified learning mission, educational technology, student success platform"
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="container mx-auto px-4">

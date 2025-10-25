@@ -1,19 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-
-  useEffect(() => {
-    document.title = "FAQ - DapsiGames | Frequently Asked Questions";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Find answers to frequently asked questions about DapsiGames, our gamified study platform, features, pricing, and more.");
-    }
-  }, []);
 
   const faqs = [
     {
@@ -118,6 +111,11 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="FAQ"
+        description="Find answers to frequently asked questions about DapsiGames. Learn about our features, XP system, badges, pricing, study groups, privacy, and more."
+        keywords="FAQ, frequently asked questions, help, support, how to use dapsigames, XP system, badges, premium features"
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="container mx-auto px-4">

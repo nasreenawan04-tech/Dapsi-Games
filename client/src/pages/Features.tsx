@@ -1,18 +1,11 @@
-import { useEffect } from "react";
 import { Clock, ListChecks, Trophy, Award, Target, TrendingUp, Users, Calendar, BarChart3, Sparkles, Shield, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
 
 export default function Features() {
-  useEffect(() => {
-    document.title = "Features - DapsiGames | Complete Study Platform";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Discover all the powerful features of DapsiGames: Pomodoro timer, study planner, leaderboards, badges, XP system, and more. Everything you need to excel.");
-    }
-  }, []);
 
   const coreFeatures = [
     {
@@ -88,6 +81,11 @@ export default function Features() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="Features"
+        description="Discover all the powerful features of DapsiGames: Pomodoro timer, study planner, global leaderboards, badges, XP system, progress analytics, and more. Everything you need to excel academically."
+        keywords="study features, pomodoro timer, study planner, leaderboards, XP system, badges, achievements, study analytics, productivity tools"
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="container mx-auto px-4">

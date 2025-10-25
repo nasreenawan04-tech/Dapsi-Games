@@ -2,18 +2,11 @@ import { Link } from "wouter";
 import { Trophy, Clock, ListChecks, Award, Zap, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect } from "react";
 import Footer from "@/components/Footer";
+import { SEO } from "@/components/SEO";
+import { OrganizationSchema, WebSiteSchema } from "@/components/StructuredData";
 
 export default function Home() {
-
-  useEffect(() => {
-    document.title = "DapsiGames - Gamified Study Platform | Study Smarter, Play Harder";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "Transform your study sessions into an epic adventure with DapsiGames. Earn XP, unlock badges, and compete with students worldwide. Join 10,000+ motivated learners.");
-    }
-  }, []);
 
   const features = [
     {
@@ -65,6 +58,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <SEO
+        title="DapsiGames - Gamified Study Platform | Study Smarter, Play Harder"
+        description="Transform your study sessions into an epic adventure with DapsiGames. Earn XP, unlock badges, and compete with students worldwide. Join 10,000+ motivated learners."
+        keywords="gamified studying, study app, pomodoro timer, student productivity, XP system, study badges, leaderboard, educational gaming"
+        ogType="website"
+      />
+      <OrganizationSchema />
+      <WebSiteSchema />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
