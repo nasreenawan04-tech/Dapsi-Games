@@ -3,9 +3,10 @@ import { useEffect } from "react";
 interface StructuredDataProps {
   type: "Organization" | "WebSite" | "WebPage" | "FAQPage" | "Article";
   data: Record<string, unknown>;
+  persistent?: boolean;
 }
 
-export function StructuredData({ type, data }: StructuredDataProps) {
+export function StructuredData({ type, data, persistent = false }: StructuredDataProps) {
   useEffect(() => {
     const scriptId = `structured-data-${type.toLowerCase()}`;
     let script = document.getElementById(scriptId) as HTMLScriptElement;
@@ -26,12 +27,14 @@ export function StructuredData({ type, data }: StructuredDataProps) {
     script.textContent = JSON.stringify(structuredData);
 
     return () => {
-      const existingScript = document.getElementById(scriptId);
-      if (existingScript) {
-        existingScript.remove();
+      if (!persistent) {
+        const existingScript = document.getElementById(scriptId);
+        if (existingScript) {
+          existingScript.remove();
+        }
       }
     };
-  }, [type, data]);
+  }, [type, data, persistent]);
 
   return null;
 }
@@ -42,6 +45,7 @@ export function OrganizationSchema() {
   return (
     <StructuredData
       type="Organization"
+      persistent={true}
       data={{
         name: "DapsiGames",
         url: baseUrl,
@@ -66,6 +70,7 @@ export function WebSiteSchema() {
   return (
     <StructuredData
       type="WebSite"
+      persistent={true}
       data={{
         name: "DapsiGames",
         url: baseUrl,

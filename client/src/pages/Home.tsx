@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
-import { OrganizationSchema, WebSiteSchema } from "@/components/StructuredData";
 
 export default function Home() {
 
@@ -64,8 +63,6 @@ export default function Home() {
         keywords="gamified studying, study app, pomodoro timer, student productivity, XP system, study badges, leaderboard, educational gaming"
         ogType="website"
       />
-      <OrganizationSchema />
-      <WebSiteSchema />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>

@@ -12,6 +12,7 @@ import { AlertCircle } from "lucide-react";
 import { initGA } from "@/lib/analytics";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { AdSenseScript } from "@/components/AdSense";
+import { OrganizationSchema, WebSiteSchema } from "@/components/StructuredData";
 
 import Home from "@/pages/Home";
 import About from "@/pages/About";
@@ -54,6 +55,8 @@ function Router() {
 
   return (
     <>
+      <OrganizationSchema />
+      <WebSiteSchema />
       <Navigation />
       {isOffline && (
         <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2">
