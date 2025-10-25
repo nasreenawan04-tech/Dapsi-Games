@@ -129,7 +129,10 @@ export const completeTask = async (taskId: string, userId: string) => {
   const taskDoc = await getDoc(taskRef);
   
   if (taskDoc.exists() && !taskDoc.data().completed) {
-    await updateDoc(taskRef, { completed: true });
+    await updateDoc(taskRef, { 
+      completed: true,
+      completedAt: Timestamp.now()
+    });
     const xpReward = taskDoc.data().xpReward || 10;
     await updateUserXP(userId, xpReward);
     return xpReward;
@@ -208,18 +211,15 @@ export const getWeeklyStats = async (userId: string) => {
     orderBy("completedAt", "asc")
   );
   
-  const tasksQuery = query(
-    collection(db, "tasks"),
-    where("userId", "==", userId),
-    where("completed", "==", true),
-    where("createdAt", ">=", Timestamp.fromDate(sevenDaysAgo)),
-    orderBy("createdAt", "asc")
+  const tasksSnapshot = await getDocs(
+    query(
+      collection(db, "tasks"),
+      where("userId", "==", userId),
+      where("completed", "==", true)
+    )
   );
   
-  const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
-    getDocs(pomodoroQuery),
-    getDocs(tasksQuery)
-  ]);
+  const pomodoroSnapshot = await getDocs(pomodoroQuery);
   
   const dailyStats = new Map();
   
@@ -248,12 +248,17 @@ export const getWeeklyStats = async (userId: string) => {
   
   tasksSnapshot.docs.forEach(doc => {
     const data = doc.data();
-    const date = data.createdAt.toDate();
-    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const stats = dailyStats.get(dateStr);
-    if (stats) {
-      stats.tasksCompleted += 1;
-      stats.xpEarned += data.xpReward || 0;
+    const completedDate = data.completedAt 
+      ? data.completedAt.toDate() 
+      : data.createdAt?.toDate();
+    
+    if (completedDate && completedDate >= sevenDaysAgo) {
+      const dateStr = completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const stats = dailyStats.get(dateStr);
+      if (stats) {
+        stats.tasksCompleted += 1;
+        stats.xpEarned += data.xpReward || 0;
+      }
     }
   });
   
@@ -270,23 +275,32 @@ export const getTodayStats = async (userId: string) => {
     where("completedAt", ">=", Timestamp.fromDate(today))
   );
   
-  const tasksQuery = query(
-    collection(db, "tasks"),
-    where("userId", "==", userId),
-    where("completed", "==", true),
-    where("createdAt", ">=", Timestamp.fromDate(today))
+  const tasksSnapshot = await getDocs(
+    query(
+      collection(db, "tasks"),
+      where("userId", "==", userId),
+      where("completed", "==", true)
+    )
   );
   
-  const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
-    getDocs(pomodoroQuery),
-    getDocs(tasksQuery)
-  ]);
+  const pomodoroSnapshot = await getDocs(pomodoroQuery);
   
   const pomodoroSessions = pomodoroSnapshot.docs.length;
   const totalStudyTime = pomodoroSnapshot.docs.reduce((sum, doc) => {
     return sum + (doc.data().duration || 0);
   }, 0);
-  const tasksCompleted = tasksSnapshot.docs.length;
+  
+  const tasksCompleted = tasksSnapshot.docs.filter(doc => {
+    const data = doc.data();
+    const completedDate = data.completedAt 
+      ? data.completedAt.toDate() 
+      : data.createdAt?.toDate();
+    
+    if (completedDate) {
+      return completedDate >= today;
+    }
+    return false;
+  }).length;
   
   return {
     pomodoroSessions,
@@ -303,18 +317,15 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
     limit(limitCount)
   );
   
-  const tasksQuery = query(
-    collection(db, "tasks"),
-    where("userId", "==", userId),
-    where("completed", "==", true),
-    orderBy("createdAt", "desc"),
-    limit(limitCount)
+  const tasksSnapshot = await getDocs(
+    query(
+      collection(db, "tasks"),
+      where("userId", "==", userId),
+      where("completed", "==", true)
+    )
   );
   
-  const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
-    getDocs(pomodoroQuery),
-    getDocs(tasksQuery)
-  ]);
+  const pomodoroSnapshot = await getDocs(pomodoroQuery);
   
   const activities: any[] = [];
   
@@ -330,12 +341,18 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
   
   tasksSnapshot.docs.forEach(doc => {
     const data = doc.data();
-    activities.push({
-      type: "task",
-      text: `Finished ${data.title}`,
-      xp: data.xpReward,
-      timestamp: data.createdAt.toDate(),
-    });
+    const completedDate = data.completedAt 
+      ? data.completedAt.toDate() 
+      : data.createdAt?.toDate();
+    
+    if (completedDate) {
+      activities.push({
+        type: "task",
+        text: `Finished ${data.title}`,
+        xp: data.xpReward,
+        timestamp: completedDate,
+      });
+    }
   });
   
   activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
