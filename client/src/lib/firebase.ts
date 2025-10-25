@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, User } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, where, Timestamp } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, where, Timestamp, enableIndexedDbPersistence, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,15 +10,34 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Validate Firebase config
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error('Firebase configuration is missing. Please check your environment variables.');
+}
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Enable offline persistence with better error handling
+enableIndexedDbPersistence(db, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED
+}).catch((err) => {
+  if (err.code === 'failed-precondition') {
+    console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+  } else if (err.code === 'unimplemented') {
+    console.warn('The current browser does not support offline persistence');
+  } else {
+    console.error("Error enabling offline persistence:", err);
+  }
+});
+
 
 // Auth functions
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const user = userCredential.user;
-  
+
   // Create user document in Firestore
   await setDoc(doc(db, "users", user.uid), {
     id: user.uid,
@@ -30,18 +49,18 @@ export const signUpWithEmail = async (email: string, password: string, name: str
     lastActive: Timestamp.now(),
     createdAt: Timestamp.now(),
   });
-  
+
   return user;
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  
+
   // Update last active
   await updateDoc(doc(db, "users", userCredential.user.uid), {
     lastActive: Timestamp.now(),
   });
-  
+
   return userCredential.user;
 };
 
@@ -65,24 +84,24 @@ export const getUserProfile = async (userId: string) => {
 export const updateUserXP = async (userId: string, xpToAdd: number) => {
   const userRef = doc(db, "users", userId);
   const userDoc = await getDoc(userRef);
-  
+
   if (userDoc.exists()) {
     const currentXP = userDoc.data().xp || 0;
     const newXP = currentXP + xpToAdd;
-    
+
     // Determine level based on XP
     let level = "Novice";
     if (newXP >= 2000) level = "Master";
     else if (newXP >= 500) level = "Scholar";
-    
+
     await updateDoc(userRef, {
       xp: newXP,
       level: level,
     });
-    
+
     return { xp: newXP, level };
   }
-  
+
   return null;
 };
 
@@ -97,7 +116,7 @@ export const createTask = async (userId: string, task: any) => {
     xpReward: task.xpReward || 10,
     createdAt: Timestamp.now(),
   };
-  
+
   const docRef = await addDoc(collection(db, "tasks"), taskData);
   return { id: docRef.id, ...taskData };
 };
@@ -108,7 +127,7 @@ export const getUserTasks = async (userId: string) => {
     where("userId", "==", userId),
     orderBy("createdAt", "desc")
   );
-  
+
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({
     id: doc.id,
@@ -133,7 +152,7 @@ export const completeTask = async (taskId: string, userId: string) => {
   try {
     const taskRef = doc(db, "tasks", taskId);
     const taskDoc = await getDoc(taskRef);
-    
+
     if (taskDoc.exists() && !taskDoc.data().completed) {
       await updateDoc(taskRef, { 
         completed: true,
@@ -143,29 +162,13 @@ export const completeTask = async (taskId: string, userId: string) => {
       await updateUserXP(userId, xpReward);
       return xpReward;
     }
-    
+
     return 0;
   } catch (error) {
     console.error("Error completing task:", error);
     throw error;
   }
 };
-
-// Enable offline persistence
-import { enableIndexedDbPersistence } from "firebase/firestore";
-
-// Initialize offline persistence (only runs once)
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-    } else if (err.code === 'unimplemented') {
-      console.warn('The current browser does not support offline persistence');
-    }
-  });
-} catch (error) {
-  console.error("Error enabling offline persistence:", error);
-}
 
 // Pomodoro session functions
 export const recordPomodoroSession = async (userId: string, duration: number, xpEarned: number) => {
@@ -176,7 +179,7 @@ export const recordPomodoroSession = async (userId: string, duration: number, xp
       xpEarned,
       completedAt: Timestamp.now(),
     });
-    
+
     await updateUserXP(userId, xpEarned);
   } catch (error) {
     console.error("Error recording pomodoro session:", error);
@@ -192,7 +195,7 @@ export const getLeaderboard = async (limitCount: number = 10) => {
       orderBy("xp", "desc"),
       limit(limitCount)
     );
-    
+
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map((doc, index) => ({
       rank: index + 1,
@@ -211,7 +214,7 @@ export const getUserBadges = async (userId: string) => {
       collection(db, "userBadges"),
       where("userId", "==", userId)
     );
-    
+
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => doc.data());
   } catch (error) {
@@ -228,7 +231,7 @@ export const unlockBadge = async (userId: string, badgeId: string) => {
       where("badgeId", "==", badgeId)
     )
   );
-  
+
   if (existingBadge.empty) {
     await addDoc(collection(db, "userBadges"), {
       userId,
@@ -237,21 +240,21 @@ export const unlockBadge = async (userId: string, badgeId: string) => {
     });
     return true;
   }
-  
+
   return false;
 };
 
 export const getWeeklyStats = async (userId: string) => {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  
+
   const pomodoroQuery = query(
     collection(db, "pomodoroSessions"),
     where("userId", "==", userId),
     where("completedAt", ">=", Timestamp.fromDate(sevenDaysAgo)),
     orderBy("completedAt", "asc")
   );
-  
+
   const tasksSnapshot = await getDocs(
     query(
       collection(db, "tasks"),
@@ -259,11 +262,11 @@ export const getWeeklyStats = async (userId: string) => {
       where("completed", "==", true)
     )
   );
-  
+
   const pomodoroSnapshot = await getDocs(pomodoroQuery);
-  
+
   const dailyStats = new Map();
-  
+
   for (let i = 0; i < 7; i++) {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
@@ -275,7 +278,7 @@ export const getWeeklyStats = async (userId: string) => {
       tasksCompleted: 0,
     });
   }
-  
+
   pomodoroSnapshot.docs.forEach(doc => {
     const data = doc.data();
     const date = data.completedAt.toDate();
@@ -286,13 +289,13 @@ export const getWeeklyStats = async (userId: string) => {
       stats.xpEarned += data.xpEarned;
     }
   });
-  
+
   tasksSnapshot.docs.forEach(doc => {
     const data = doc.data();
     const completedDate = data.completedAt 
       ? data.completedAt.toDate() 
       : data.createdAt?.toDate();
-    
+
     if (completedDate && completedDate >= sevenDaysAgo) {
       const dateStr = completedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const stats = dailyStats.get(dateStr);
@@ -302,20 +305,20 @@ export const getWeeklyStats = async (userId: string) => {
       }
     }
   });
-  
+
   return Array.from(dailyStats.values());
 };
 
 export const getTodayStats = async (userId: string) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const pomodoroQuery = query(
     collection(db, "pomodoroSessions"),
     where("userId", "==", userId),
     where("completedAt", ">=", Timestamp.fromDate(today))
   );
-  
+
   const tasksSnapshot = await getDocs(
     query(
       collection(db, "tasks"),
@@ -323,26 +326,26 @@ export const getTodayStats = async (userId: string) => {
       where("completed", "==", true)
     )
   );
-  
+
   const pomodoroSnapshot = await getDocs(pomodoroQuery);
-  
+
   const pomodoroSessions = pomodoroSnapshot.docs.length;
   const totalStudyTime = pomodoroSnapshot.docs.reduce((sum, doc) => {
     return sum + (doc.data().duration || 0);
   }, 0);
-  
+
   const tasksCompleted = tasksSnapshot.docs.filter(doc => {
     const data = doc.data();
     const completedDate = data.completedAt 
       ? data.completedAt.toDate() 
       : data.createdAt?.toDate();
-    
+
     if (completedDate) {
       return completedDate >= today;
     }
     return false;
   }).length;
-  
+
   return {
     pomodoroSessions,
     totalStudyTime,
@@ -357,7 +360,7 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
     orderBy("completedAt", "desc"),
     limit(limitCount)
   );
-  
+
   const tasksSnapshot = await getDocs(
     query(
       collection(db, "tasks"),
@@ -365,11 +368,11 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
       where("completed", "==", true)
     )
   );
-  
+
   const pomodoroSnapshot = await getDocs(pomodoroQuery);
-  
+
   const activities: any[] = [];
-  
+
   pomodoroSnapshot.docs.forEach(doc => {
     const data = doc.data();
     activities.push({
@@ -379,13 +382,13 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
       timestamp: data.completedAt.toDate(),
     });
   });
-  
+
   tasksSnapshot.docs.forEach(doc => {
     const data = doc.data();
     const completedDate = data.completedAt 
       ? data.completedAt.toDate() 
       : data.createdAt?.toDate();
-    
+
     if (completedDate) {
       activities.push({
         type: "task",
@@ -395,15 +398,15 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
       });
     }
   });
-  
+
   activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  
+
   return activities.slice(0, limitCount).map(activity => {
     const now = new Date();
     const diff = now.getTime() - activity.timestamp.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     let timeAgo;
     if (days > 0) {
       timeAgo = days === 1 ? "1 day ago" : `${days} days ago`;
@@ -412,7 +415,7 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
     } else {
       timeAgo = "Just now";
     }
-    
+
     return {
       ...activity,
       time: timeAgo,
@@ -426,23 +429,23 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
 export const checkAndUnlockBadges = async (userId: string) => {
   const userDoc = await getDoc(doc(db, "users", userId));
   if (!userDoc.exists()) return [];
-  
+
   const userData = userDoc.data();
   const userXP = userData.xp || 0;
   const userLevel = userData.level || "Novice";
-  
+
   const pomodoroSnapshot = await getDocs(
     query(collection(db, "pomodoroSessions"), where("userId", "==", userId))
   );
   const pomodoroCount = pomodoroSnapshot.docs.length;
-  
+
   const tasksSnapshot = await getDocs(
     query(collection(db, "tasks"), where("userId", "==", userId), where("completed", "==", true))
   );
   const tasksCompleted = tasksSnapshot.docs.length;
-  
+
   const userStreak = userData.streak || 0;
-  
+
   const badgeConditions = [
     { id: "first_focus", condition: pomodoroCount >= 1 },
     { id: "dedicated_learner", condition: userStreak >= 7 },
@@ -453,9 +456,9 @@ export const checkAndUnlockBadges = async (userId: string) => {
     { id: "xp_collector", condition: userXP >= 2000 },
     { id: "master_learner", condition: userLevel === "Master" },
   ];
-  
+
   const unlockedBadges = [];
-  
+
   for (const badge of badgeConditions) {
     if (badge.condition) {
       const unlocked = await unlockBadge(userId, badge.id);
@@ -464,7 +467,7 @@ export const checkAndUnlockBadges = async (userId: string) => {
       }
     }
   }
-  
+
   return unlockedBadges;
 };
 
@@ -472,26 +475,26 @@ export const checkAndUnlockBadges = async (userId: string) => {
 export const updateStreak = async (userId: string) => {
   const userRef = doc(db, "users", userId);
   const userDoc = await getDoc(userRef);
-  
+
   if (!userDoc.exists()) return;
-  
+
   const userData = userDoc.data();
   const lastActive = userData.lastActive?.toDate() || new Date(0);
   const now = new Date();
-  
+
   const oneDayAgo = new Date(now);
   oneDayAgo.setDate(oneDayAgo.getDate() - 1);
   oneDayAgo.setHours(0, 0, 0, 0);
-  
+
   const twoDaysAgo = new Date(now);
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
   twoDaysAgo.setHours(0, 0, 0, 0);
-  
+
   const lastActiveDay = new Date(lastActive);
   lastActiveDay.setHours(0, 0, 0, 0);
-  
+
   const currentStreak = userData.streak || 0;
-  
+
   if (lastActiveDay >= oneDayAgo) {
     await updateDoc(userRef, {
       streak: currentStreak + 1,
@@ -515,48 +518,48 @@ export const updateStreak = async (userId: string) => {
 // Leaderboard with time filters
 export const getFilteredLeaderboard = async (timeFilter: "all" | "daily" | "weekly" = "all", limitCount: number = 20) => {
   let usersQuery = query(collection(db, "users"), orderBy("xp", "desc"), limit(limitCount));
-  
+
   if (timeFilter === "daily" || timeFilter === "weekly") {
     const now = new Date();
     const startDate = new Date(now);
-    
+
     if (timeFilter === "daily") {
       startDate.setHours(0, 0, 0, 0);
     } else {
       startDate.setDate(startDate.getDate() - 7);
       startDate.setHours(0, 0, 0, 0);
     }
-    
+
     const allUsersSnapshot = await getDocs(query(collection(db, "users")));
     const userScores: any[] = [];
-    
+
     for (const userDoc of allUsersSnapshot.docs) {
       const userId = userDoc.id;
       const userData = userDoc.data();
-      
+
       const pomodoroQuery = query(
         collection(db, "pomodoroSessions"),
         where("userId", "==", userId),
         where("completedAt", ">=", Timestamp.fromDate(startDate))
       );
-      
+
       const tasksQuery = query(
         collection(db, "tasks"),
         where("userId", "==", userId),
         where("completed", "==", true)
       );
-      
+
       const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
         getDocs(pomodoroQuery),
         getDocs(tasksQuery)
       ]);
-      
+
       let periodXP = 0;
-      
+
       pomodoroSnapshot.docs.forEach(doc => {
         periodXP += doc.data().xpEarned || 0;
       });
-      
+
       tasksSnapshot.docs.forEach(doc => {
         const data = doc.data();
         const completedDate = data.completedAt?.toDate();
@@ -564,7 +567,7 @@ export const getFilteredLeaderboard = async (timeFilter: "all" | "daily" | "week
           periodXP += data.xpReward || 0;
         }
       });
-      
+
       if (periodXP > 0) {
         userScores.push({
           ...userData,
@@ -573,14 +576,14 @@ export const getFilteredLeaderboard = async (timeFilter: "all" | "daily" | "week
         });
       }
     }
-    
+
     userScores.sort((a, b) => b.xp - a.xp);
     return userScores.slice(0, limitCount).map((user, index) => ({
       rank: index + 1,
       ...user,
     }));
   }
-  
+
   const querySnapshot = await getDocs(usersQuery);
   return querySnapshot.docs.map((doc, index) => ({
     rank: index + 1,
@@ -597,7 +600,7 @@ export const sendFriendRequest = async (fromUserId: string, toUserId: string) =>
       where("toUserId", "==", toUserId)
     )
   );
-  
+
   if (existingRequest.empty) {
     await addDoc(collection(db, "friendRequests"), {
       fromUserId,
@@ -607,7 +610,7 @@ export const sendFriendRequest = async (fromUserId: string, toUserId: string) =>
     });
     return true;
   }
-  
+
   return false;
 };
 
@@ -615,13 +618,13 @@ export const acceptFriendRequest = async (requestId: string, fromUserId: string,
   await updateDoc(doc(db, "friendRequests", requestId), {
     status: "accepted",
   });
-  
+
   await addDoc(collection(db, "friends"), {
     userId: fromUserId,
     friendId: toUserId,
     createdAt: Timestamp.now(),
   });
-  
+
   await addDoc(collection(db, "friends"), {
     userId: toUserId,
     friendId: fromUserId,
@@ -643,7 +646,7 @@ export const removeFriend = async (userId: string, friendId: string) => {
       where("friendId", "==", friendId)
     )
   );
-  
+
   const friendship2 = await getDocs(
     query(
       collection(db, "friends"),
@@ -651,11 +654,11 @@ export const removeFriend = async (userId: string, friendId: string) => {
       where("friendId", "==", userId)
     )
   );
-  
+
   friendship1.docs.forEach(async (doc) => {
     await deleteDoc(doc.ref);
   });
-  
+
   friendship2.docs.forEach(async (doc) => {
     await deleteDoc(doc.ref);
   });
@@ -666,10 +669,10 @@ export const getFriends = async (userId: string) => {
     collection(db, "friends"),
     where("userId", "==", userId)
   );
-  
+
   const querySnapshot = await getDocs(q);
   const friendIds = querySnapshot.docs.map(doc => doc.data().friendId);
-  
+
   const friends = [];
   for (const friendId of friendIds) {
     const friendDoc = await getDoc(doc(db, "users", friendId));
@@ -680,7 +683,7 @@ export const getFriends = async (userId: string) => {
       });
     }
   }
-  
+
   return friends;
 };
 
@@ -690,14 +693,14 @@ export const getFriendRequests = async (userId: string) => {
     where("toUserId", "==", userId),
     where("status", "==", "pending")
   );
-  
+
   const querySnapshot = await getDocs(q);
   const requests = [];
-  
+
   for (const requestDoc of querySnapshot.docs) {
     const requestData = requestDoc.data();
     const fromUserDoc = await getDoc(doc(db, "users", requestData.fromUserId));
-    
+
     if (fromUserDoc.exists()) {
       requests.push({
         id: requestDoc.id,
@@ -709,7 +712,7 @@ export const getFriendRequests = async (userId: string) => {
       });
     }
   }
-  
+
   return requests;
 };
 
@@ -717,9 +720,9 @@ export const getFriendsLeaderboard = async (userId: string, limitCount: number =
   const friends = await getFriends(userId);
   const friendIds = friends.map(f => f.id);
   friendIds.push(userId);
-  
+
   const leaderboard: any[] = [];
-  
+
   for (const friendId of friendIds) {
     const userDoc = await getDoc(doc(db, "users", friendId));
     if (userDoc.exists()) {
@@ -729,9 +732,9 @@ export const getFriendsLeaderboard = async (userId: string, limitCount: number =
       });
     }
   }
-  
+
   leaderboard.sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0));
-  
+
   return leaderboard.slice(0, limitCount).map((user, index) => ({
     rank: index + 1,
     ...user,
@@ -748,14 +751,14 @@ export const createStudyGroup = async (creatorId: string, name: string, descript
     totalXP: 0,
     createdAt: Timestamp.now(),
   });
-  
+
   await addDoc(collection(db, "groupMembers"), {
     groupId: groupRef.id,
     userId: creatorId,
     role: "admin",
     joinedAt: Timestamp.now(),
   });
-  
+
   return groupRef.id;
 };
 
@@ -767,7 +770,7 @@ export const joinStudyGroup = async (userId: string, groupId: string) => {
       where("userId", "==", userId)
     )
   );
-  
+
   if (existingMember.empty) {
     await addDoc(collection(db, "groupMembers"), {
       groupId,
@@ -775,7 +778,7 @@ export const joinStudyGroup = async (userId: string, groupId: string) => {
       role: "member",
       joinedAt: Timestamp.now(),
     });
-    
+
     const groupRef = doc(db, "groups", groupId);
     const groupDoc = await getDoc(groupRef);
     if (groupDoc.exists()) {
@@ -783,10 +786,10 @@ export const joinStudyGroup = async (userId: string, groupId: string) => {
         memberCount: (groupDoc.data().memberCount || 0) + 1,
       });
     }
-    
+
     return true;
   }
-  
+
   return false;
 };
 
@@ -796,13 +799,13 @@ export const leaveStudyGroup = async (userId: string, groupId: string) => {
     where("groupId", "==", groupId),
     where("userId", "==", userId)
   );
-  
+
   const memberSnapshot = await getDocs(memberQuery);
-  
+
   memberSnapshot.docs.forEach(async (doc) => {
     await deleteDoc(doc.ref);
   });
-  
+
   const groupRef = doc(db, "groups", groupId);
   const groupDoc = await getDoc(groupRef);
   if (groupDoc.exists()) {
@@ -817,14 +820,14 @@ export const getUserGroups = async (userId: string) => {
     collection(db, "groupMembers"),
     where("userId", "==", userId)
   );
-  
+
   const querySnapshot = await getDocs(q);
   const groups = [];
-  
+
   for (const memberDoc of querySnapshot.docs) {
     const groupId = memberDoc.data().groupId;
     const groupDoc = await getDoc(doc(db, "groups", groupId));
-    
+
     if (groupDoc.exists()) {
       groups.push({
         id: groupId,
@@ -833,7 +836,7 @@ export const getUserGroups = async (userId: string) => {
       });
     }
   }
-  
+
   return groups;
 };
 
@@ -842,14 +845,14 @@ export const getGroupLeaderboard = async (groupId: string) => {
     collection(db, "groupMembers"),
     where("groupId", "==", groupId)
   );
-  
+
   const membersSnapshot = await getDocs(membersQuery);
   const leaderboard: any[] = [];
-  
+
   for (const memberDoc of membersSnapshot.docs) {
     const userId = memberDoc.data().userId;
     const userDoc = await getDoc(doc(db, "users", userId));
-    
+
     if (userDoc.exists()) {
       leaderboard.push({
         id: userId,
@@ -858,9 +861,9 @@ export const getGroupLeaderboard = async (groupId: string) => {
       });
     }
   }
-  
+
   leaderboard.sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0));
-  
+
   return leaderboard.map((user, index) => ({
     rank: index + 1,
     ...user,
@@ -873,7 +876,7 @@ export const getAllGroups = async (limitCount: number = 20) => {
     orderBy("memberCount", "desc"),
     limit(limitCount)
   );
-  
+
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({
     id: doc.id,
@@ -888,27 +891,27 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
     orderBy("completedAt", "desc"),
     limit(limitCount * 2)
   );
-  
+
   const tasksQuery = query(
     collection(db, "tasks"),
     where("completed", "==", true),
     orderBy("completedAt", "desc"),
     limit(limitCount * 2)
   );
-  
+
   const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
     getDocs(pomodoroQuery),
     getDocs(tasksQuery)
   ]);
-  
+
   const activities: any[] = [];
-  
+
   const userCache = new Map();
-  
+
   for (const sessionDoc of pomodoroSnapshot.docs) {
     const data = sessionDoc.data();
     let user = userCache.get(data.userId);
-    
+
     if (!user) {
       const userDoc = await getDoc(doc(db, "users", data.userId));
       if (userDoc.exists()) {
@@ -916,7 +919,7 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
         userCache.set(data.userId, user);
       }
     }
-    
+
     if (user) {
       activities.push({
         type: "session",
@@ -928,12 +931,12 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
       });
     }
   }
-  
+
   for (const taskDoc of tasksSnapshot.docs) {
     const data = taskDoc.data();
     if (data.completedAt) {
       let user = userCache.get(data.userId);
-      
+
       if (!user) {
         const userDoc = await getDoc(doc(db, "users", data.userId));
         if (userDoc.exists()) {
@@ -941,7 +944,7 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
           userCache.set(data.userId, user);
         }
       }
-      
+
       if (user) {
         activities.push({
           type: "task",
@@ -954,15 +957,15 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
       }
     }
   }
-  
+
   activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  
+
   return activities.slice(0, limitCount).map(activity => {
     const now = new Date();
     const diff = now.getTime() - activity.timestamp.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     let timeAgo;
     if (days > 0) {
       timeAgo = days === 1 ? "1 day ago" : `${days} days ago`;
@@ -971,7 +974,7 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
     } else {
       timeAgo = "Just now";
     }
-    
+
     return {
       ...activity,
       time: timeAgo,
@@ -981,7 +984,7 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
 
 export const searchUsers = async (searchTerm: string, limitCount: number = 10) => {
   const usersSnapshot = await getDocs(query(collection(db, "users")));
-  
+
   const results = usersSnapshot.docs
     .map(doc => ({
       id: doc.id,
@@ -992,6 +995,6 @@ export const searchUsers = async (searchTerm: string, limitCount: number = 10) =
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .slice(0, limitCount);
-  
+
   return results;
 };
