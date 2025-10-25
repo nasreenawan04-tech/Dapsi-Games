@@ -9,6 +9,7 @@ interface User {
   xp: number;
   level: string;
   streak: number;
+  emailVerified: boolean;
 }
 
 interface AuthContextType {
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             xp: profile.xp || 0,
             level: profile.level || "Novice",
             streak: profile.streak || 0,
+            emailVerified: firebaseUser.emailVerified,
           });
         }
       } else {
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async () => {
     if (auth.currentUser) {
+      await auth.currentUser.reload();
       const profile = await getUserProfile(auth.currentUser.uid);
       if (profile) {
         setUser({
@@ -62,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           xp: profile.xp || 0,
           level: profile.level || "Novice",
           streak: profile.streak || 0,
+          emailVerified: auth.currentUser.emailVerified,
         });
       }
     }
