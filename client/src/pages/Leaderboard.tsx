@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { db, getFriends } from "@/lib/firebase";
+import { getLeaderboardViaAPI } from "@/lib/api";
 import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from "firebase/firestore";
 
 export default function Leaderboard() {
@@ -98,22 +99,15 @@ function LeaderboardContent() {
           setLoading(false);
         });
       } else {
-        // All-time global leaderboard
-        const globalQuery = query(
-          collection(db, "users"),
-          orderBy("xp", "desc"),
-          limit(20)
-        );
-
-        unsubscribe = onSnapshot(globalQuery, (snapshot) => {
-          const users = snapshot.docs.map((doc, index) => ({
-            rank: index + 1,
-            id: doc.id,
-            ...doc.data(),
-          }));
+        // All-time global leaderboard via backend API
+        try {
+          const users = await getLeaderboardViaAPI(20);
           setLeaderboardData(users);
           setLoading(false);
-        });
+        } catch (error) {
+          console.error("Leaderboard fetch error:", error);
+          setLoading(false);
+        }
       }
     };
 

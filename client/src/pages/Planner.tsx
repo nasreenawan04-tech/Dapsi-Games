@@ -9,7 +9,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createTask, getUserTasks, updateTask, deleteTask as deleteTaskFromDB, completeTask, checkAndUnlockBadges } from "@/lib/firebase";
+import { createTask, getUserTasks, updateTask, deleteTask as deleteTaskFromDB } from "@/lib/firebase";
+import { completeTaskViaAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Planner() {
@@ -65,19 +66,18 @@ function PlannerContent() {
   const toggleTask = async (taskId: string, currentStatus: boolean) => {
     try {
       if (!currentStatus) {
-        const xpEarned = await completeTask(taskId, user!.id);
-        const newBadges = await checkAndUnlockBadges(user!.id);
+        const result = await completeTaskViaAPI(taskId, user!.id);
         await refreshUser();
         toast({
           title: "Task Completed! 🎉",
-          description: `You earned ${xpEarned} XP!`,
+          description: `You earned ${result.xpReward} XP!`,
         });
 
-        if (newBadges && newBadges.length > 0) {
+        if (result.unlockedBadges && result.unlockedBadges.length > 0) {
           setTimeout(() => {
             toast({
               title: "🏆 New Badge Unlocked!",
-              description: `You've earned ${newBadges.length} new badge${newBadges.length > 1 ? 's' : ''}!`,
+              description: `You've earned ${result.unlockedBadges.length} new badge${result.unlockedBadges.length > 1 ? 's' : ''}!`,
             });
           }, 1000);
         }

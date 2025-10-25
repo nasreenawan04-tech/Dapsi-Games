@@ -4,6 +4,23 @@
 DapsiGames is a comprehensive study and productivity application designed to transform studying into an engaging, gamified experience for students. It incentivizes users with XP points, badges, and leaderboard rankings for completing study tasks, maintaining focus, and achieving goals. The project aims to motivate students aged 13-25 by making learning more interactive and rewarding.
 
 ## Recent Changes
+### October 25, 2025 - Phase 5: Core Back-End Integration
+- **Backend API Integration**: Implemented Express.js backend with Firebase Admin SDK for secure server-side operations
+  - Set up Firebase Admin SDK with service account credentials for privileged Firestore access
+  - Created `/api/pomodoro/complete` endpoint to record sessions and award XP
+  - Created `/api/tasks/:taskId/complete` endpoint for task completion with automatic badge checking
+  - Created `/api/leaderboard` endpoint for efficient leaderboard data retrieval
+  - Created `/api/badges/check` endpoint for automated badge unlocking based on achievements
+  - Created `/api/users/:userId/streak` endpoint for daily streak management
+  - Created `/api/users/:userId/stats` endpoint for user statistics
+- **Frontend Integration**: Updated frontend components to use new backend APIs
+  - PomodoroTimer component now uses backend API with automatic badge notifications
+  - Planner component uses backend API for task completion
+  - Leaderboard component uses backend API for global leaderboard data
+  - Created `client/src/lib/api.ts` with helper functions and automatic fallback to direct Firebase calls
+- **Improved Architecture**: Core game logic (XP calculations, badge unlocking) now handled server-side for security and consistency
+- **Enhanced User Experience**: Automatic badge unlock notifications when completing sessions or tasks
+
 ### October 25, 2025 - Phase 4: Email Verification Implementation
 - **Added Email Verification**: Implemented Firebase email verification to secure user accounts
   - New users receive verification email automatically upon signup
@@ -54,14 +71,20 @@ The application is built with a modern web stack, emphasizing a gamified user ex
 - **Activity Feed**: Provides a global, real-time feed of user study activities, showing recent Pomodoro sessions and task completions.
 
 ### System Design Choices
-- **Client-Side Firebase Integration**: Most features directly interact with Firebase Firestore and Authentication from the client-side, minimizing the need for a custom backend server for core functionalities.
+- **Hybrid Architecture**: Combines client-side Firebase for real-time features with server-side Express.js backend for core game logic
+  - Frontend uses Firebase Authentication and real-time listeners for UI updates
+  - Backend handles XP calculations, badge unlocking, and data validation via Firebase Admin SDK
+  - API layer provides fallback mechanisms to direct Firebase calls for resilience
 - **Real-time Data**: Leverages Firebase's real-time capabilities for dynamic updates across leaderboards, activity feeds, and user progress.
 - **Modular Component Architecture**: Organized project structure with reusable components and dedicated contexts for state management.
+- **Secure Server-Side Operations**: Critical game logic executed on backend to prevent client-side manipulation of XP and badges.
 
 ## External Dependencies
 - **Firebase**:
     - **Firebase Firestore**: Primary NoSQL database for all application data (users, tasks, sessions, badges, friends, groups, activities).
     - **Firebase Authentication**: Manages user registration, login, session management, and password resets.
+    - **Firebase Admin SDK**: Server-side SDK for privileged Firestore access and secure operations.
+- **Express.js**: Backend web framework for API endpoints.
 - **React**: Frontend library for building user interfaces.
 - **Wouter**: Lightweight client-side routing.
 - **TailwindCSS**: Utility-first CSS framework for styling.

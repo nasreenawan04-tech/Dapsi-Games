@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Play, Pause, RotateCcw, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { recordPomodoroSession, checkAndUnlockBadges } from "@/lib/firebase";
+import { recordPomodoroSessionViaAPI } from "@/lib/api";
 
 interface PomodoroTimerProps {
   onComplete?: (duration: number, xpEarned: number) => void;
@@ -48,8 +48,7 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
     
     if (user) {
       try {
-        await recordPomodoroSession(user.id, duration, xpEarned);
-        const newBadges = await checkAndUnlockBadges(user.id);
+        const result = await recordPomodoroSessionViaAPI(user.id, duration, xpEarned);
         await refreshUser();
         
         toast({
@@ -57,11 +56,11 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
           description: `Great job! You earned ${xpEarned} XP!`,
         });
 
-        if (newBadges && newBadges.length > 0) {
+        if (result.unlockedBadges && result.unlockedBadges.length > 0) {
           setTimeout(() => {
             toast({
               title: "🏆 New Badge Unlocked!",
-              description: `You've earned ${newBadges.length} new badge${newBadges.length > 1 ? 's' : ''}!`,
+              description: `You've earned ${result.unlockedBadges.length} new badge${result.unlockedBadges.length > 1 ? 's' : ''}!`,
             });
           }, 1000);
         }
