@@ -4,8 +4,9 @@ import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
-import { getLeaderboard } from "@/lib/firebase";
+import { getFilteredLeaderboard, getFriendsLeaderboard } from "@/lib/firebase";
 
 export default function Leaderboard() {
   return (
@@ -19,14 +20,22 @@ function LeaderboardContent() {
   const { user } = useAuth();
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentTab, setCurrentTab] = useState<"all" | "weekly" | "daily" | "friends">("all");
 
   useEffect(() => {
-    loadLeaderboard();
-  }, []);
+    loadLeaderboard(currentTab);
+  }, [currentTab, user]);
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = async (filter: "all" | "weekly" | "daily" | "friends") => {
+    if (!user) return;
+    setLoading(true);
     try {
-      const data = await getLeaderboard(20);
+      let data;
+      if (filter === "friends") {
+        data = await getFriendsLeaderboard(user.id, 20);
+      } else {
+        data = await getFilteredLeaderboard(filter, 20);
+      }
       setLeaderboardData(data);
     } catch (error) {
       console.error("Failed to load leaderboard:", error);
@@ -48,19 +57,61 @@ function LeaderboardContent() {
   const topThree = leaderboardData.slice(0, 3);
   const restOfLeaderboard = leaderboardData.slice(3);
 
+  const getTabLabel = () => {
+    if (currentTab === "all") return "Global Leaderboard";
+    if (currentTab === "weekly") return "Weekly Leaderboard";
+    if (currentTab === "daily") return "Daily Leaderboard";
+    return "Friends Leaderboard";
+  };
+
+  const getTabDescription = () => {
+    if (currentTab === "all") return "See how you rank against students worldwide";
+    if (currentTab === "weekly") return "Top performers this week";
+    if (currentTab === "daily") return "Top performers today";
+    return "See how you rank against your friends";
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
           <Trophy className="h-8 w-8 text-primary" />
-          Global Leaderboard
+          {getTabLabel()}
         </h1>
         <p className="text-muted-foreground">
-          See how you rank against students worldwide
+          {getTabDescription()}
         </p>
       </div>
 
+      <Tabs 
+        value={currentTab} 
+        onValueChange={(value) => setCurrentTab(value as any)}
+        className="mb-8"
+      >
+        <TabsList className="grid w-full grid-cols-4" data-testid="leaderboard-tabs">
+          <TabsTrigger value="all" data-testid="tab-all">All Time</TabsTrigger>
+          <TabsTrigger value="weekly" data-testid="tab-weekly">Weekly</TabsTrigger>
+          <TabsTrigger value="daily" data-testid="tab-daily">Daily</TabsTrigger>
+          <TabsTrigger value="friends" data-testid="tab-friends">Friends</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {leaderboardData.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Trophy className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No data yet</h3>
+            <p className="text-muted-foreground">
+              {currentTab === "friends" 
+                ? "Add friends to see them here!" 
+                : "Start earning XP to appear on the leaderboard!"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
       {/* Top 3 Podium */}
+      {leaderboardData.length >= 3 && (
       <div className="grid md:grid-cols-3 gap-4 mb-8">
         {/* Second Place */}
         <div className="md:order-1 order-2">
@@ -135,6 +186,7 @@ function LeaderboardContent() {
           </Card>
         </div>
       </div>
+      )}
 
       {/* Full Leaderboard Table */}
       <Card>
@@ -146,7 +198,7 @@ function LeaderboardContent() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {restOfLeaderboard.map((entry) => {
+            {leaderboardData.map((entry) => {
               const isCurrentUser = entry.name === user.name;
               return (
                 <div
@@ -177,7 +229,7 @@ function LeaderboardContent() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-primary">{entry.xp.toLocaleString()} XP</p>
-                    <p className="text-xs text-muted-foreground">{entry.streak} day streak</p>
+                    <p className="text-xs text-muted-foreground">{entry.streak || 0} day streak</p>
                   </div>
                 </div>
               );
@@ -185,6 +237,8 @@ function LeaderboardContent() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

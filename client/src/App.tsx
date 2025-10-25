@@ -15,6 +15,9 @@ import Leaderboard from "@/pages/Leaderboard";
 import Planner from "@/pages/Planner";
 import Rewards from "@/pages/Rewards";
 import Profile from "@/pages/Profile";
+import Friends from "@/pages/Friends";
+import Groups from "@/pages/Groups";
+import Activity from "@/pages/Activity";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -27,8 +30,11 @@ function Router() {
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/dashboard" component={Dashboard} />
-        <Route path="/leaderboard" component={Leaderboard} />
         <Route path="/planner" component={Planner} />
+        <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/friends" component={Friends} />
+        <Route path="/groups" component={Groups} />
+        <Route path="/activity" component={Activity} />
         <Route path="/rewards" component={Rewards} />
         <Route path="/profile" component={Profile} />
         <Route component={NotFound} />

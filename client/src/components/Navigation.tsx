@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, LayoutDashboard, Trophy, ListTodo, Award, User, LogOut, Menu, X } from "lucide-react";
+import { Home, LayoutDashboard, Trophy, ListTodo, Award, User, LogOut, Menu, X, Users, Users2, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +42,9 @@ export function Navigation() {
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/planner", icon: ListTodo, label: "Planner" },
     { href: "/leaderboard", icon: Trophy, label: "Leaderboard" },
+    { href: "/friends", icon: Users, label: "Friends" },
+    { href: "/groups", icon: Users2, label: "Groups" },
+    { href: "/activity", icon: Activity, label: "Activity" },
     { href: "/rewards", icon: Award, label: "Rewards" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
