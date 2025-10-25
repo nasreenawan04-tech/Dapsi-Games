@@ -9,6 +9,9 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { initGA } from "@/lib/analytics";
+import { useAnalytics } from "@/hooks/use-analytics";
+import { AdSenseScript } from "@/components/AdSense";
 
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -24,10 +27,12 @@ import Profile from "@/pages/Profile";
 import Activity from "@/pages/Activity";
 import Friends from "@/pages/Friends";
 import Groups from "@/pages/Groups";
+import Subscribe from "@/pages/Subscribe";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  useAnalytics();
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -107,6 +112,11 @@ function Router() {
             <Groups />
           </ProtectedRoute>
         </Route>
+        <Route path="/subscribe">
+          <ProtectedRoute>
+            <Subscribe />
+          </ProtectedRoute>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </>
@@ -114,10 +124,17 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    if (import.meta.env.VITE_GA_MEASUREMENT_ID) {
+      initGA();
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
+          <AdSenseScript />
           <Router />
           <Toaster />
         </AuthProvider>

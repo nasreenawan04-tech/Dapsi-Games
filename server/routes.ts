@@ -4,6 +4,12 @@ import { storage } from "./storage";
 import { db, auth as adminAuth } from "./firebase-admin";
 import { insertPomodoroSessionSchema, insertTaskSchema } from "@shared/schema";
 import { z } from "zod";
+import Stripe from "stripe";
+
+// Initialize Stripe if configured
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-09-30.clover" })
+  : null;
 
 // Extend Express Request type to include userId
 interface AuthenticatedRequest extends Request {
@@ -315,6 +321,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error fetching user stats:", error);
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Create Stripe subscription for premium membership
+  app.post("/api/create-subscription", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!stripe) {
+        return res.status(503).json({ 
+          error: "Premium subscriptions are currently unavailable. Stripe is not configured.",
+          configured: false 
+        });
+      }
+
+      const userId = req.userId!;
+      const userEmail = req.userEmail;
+
+      if (!userEmail) {
+        return res.status(400).json({ error: "User email not found" });
+      }
+
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const userData = userDoc.data();
+
+      // Check if user already has a subscription
+      if (userData?.stripeSubscriptionId) {
+        const subscription = await stripe.subscriptions.retrieve(userData.stripeSubscriptionId);
+        
+        if (subscription.status === 'active') {
+          return res.json({
+            subscriptionId: subscription.id,
+            clientSecret: (subscription.latest_invoice as any)?.payment_intent?.client_secret,
+          });
+        }
+      }
+
+      // Create or retrieve Stripe customer
+      let customerId = userData?.stripeCustomerId;
+      
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: userEmail,
+          metadata: {
+            userId: userId,
+          },
+        });
+        customerId = customer.id;
+        
+        await userRef.update({
+          stripeCustomerId: customerId,
+        });
+      }
+
+      // Create or get price for premium subscription
+      const prices = await stripe.prices.list({
+        lookup_keys: ['dapsigames_premium_monthly'],
+        limit: 1,
+      });
+
+      let priceId: string;
+
+      if (prices.data.length > 0) {
+        priceId = prices.data[0].id;
+      } else {
+        // Create product and price if they don't exist
+        const product = await stripe.products.create({
+          name: 'DapsiGames Premium',
+          description: 'Ad-free, custom themes, analytics, and cloud sync',
+        });
+
+        const price = await stripe.prices.create({
+          product: product.id,
+          unit_amount: 500, // $5.00 in cents
+          currency: 'usd',
+          recurring: { interval: 'month' },
+          lookup_key: 'dapsigames_premium_monthly',
+        });
+
+        priceId = price.id;
+      }
+
+      // Create subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      await userRef.update({
+        stripeSubscriptionId: subscription.id,
+      });
+
+      const invoice = subscription.latest_invoice as any;
+      const paymentIntent = invoice?.payment_intent;
+
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: paymentIntent?.client_secret,
+      });
+    } catch (error: any) {
+      console.error("Error creating subscription:", error);
       return res.status(500).json({ error: error.message || "Internal server error" });
     }
   });
