@@ -3,6 +3,18 @@
 ## Overview
 DapsiGames is a comprehensive study and productivity application designed to transform studying into an engaging, gamified experience for students. It incentivizes users with XP points, badges, and leaderboard rankings for completing study tasks, maintaining focus, and achieving goals. The project aims to motivate students aged 13-25 by making learning more interactive and rewarding.
 
+## Recent Changes
+### October 25, 2025 - Phase 4: Email Verification Implementation
+- **Added Email Verification**: Implemented Firebase email verification to secure user accounts
+  - New users receive verification email automatically upon signup
+  - Unverified users are redirected to verification page before accessing protected content
+  - Created dedicated EmailVerification page with resend functionality
+  - Added 60-second cooldown timer for resend requests
+  - Updated AuthContext to track emailVerified status
+  - Modified ProtectedRoute component to enforce verification requirement
+- **Enhanced Security**: Users must verify their email address before accessing any app features
+- **Improved UX**: Clear messaging and easy resend option for verification emails
+
 ## User Preferences
 - Clean, minimal, gamified interface
 - Focus on motivation and progress visualization
@@ -23,7 +35,14 @@ The application is built with a modern web stack, emphasizing a gamified user ex
 
 ### Technical Implementations
 - **Frontend**: React 19 with TypeScript, Wouter for routing, and TailwindCSS for styling. State management is handled via React Context API and TanStack Query.
-- **Authentication System**: Implemented using Firebase Authentication for email/password login, registration, password reset, and real-time auth state management. Protected routes ensure secure access to user-specific content.
+- **Authentication System**: Comprehensive authentication system using Firebase Authentication featuring:
+  - Email/password registration with automatic verification email dispatch
+  - Email verification requirement before accessing protected content
+  - Secure login with session persistence
+  - Password reset functionality
+  - Real-time auth state management via Firebase Auth observers
+  - Protected routes that redirect unverified users to verification page
+  - Email verification page with resend capability and cooldown timer
 - **Gamified Dashboard**: Displays user XP, level progression, daily goals, recent activity, and quick stats, providing a central hub for user progress.
 - **Pomodoro Focus Timer**: Customizable timer with XP rewards upon completion, integrated with Firebase to record sessions and update user XP.
 - **Study Planner**: Enables CRUD operations for study tasks, subject categorization, due date tracking, and XP rewards, with all data stored in Firestore.

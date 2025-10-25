@@ -30,8 +30,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (!user.emailVerified && location !== "/verify-email") {
-    return null;
+  if (!user.emailVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifying email...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
