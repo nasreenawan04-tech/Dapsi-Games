@@ -5,13 +5,15 @@ import { Loader2 } from "lucide-react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     if (!loading && !user) {
       setLocation("/login");
+    } else if (!loading && user && !user.emailVerified && location !== "/verify-email") {
+      setLocation("/verify-email");
     }
-  }, [user, loading, setLocation]);
+  }, [user, loading, location, setLocation]);
 
   if (loading) {
     return (
@@ -25,6 +27,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
+    return null;
+  }
+
+  if (!user.emailVerified && location !== "/verify-email") {
     return null;
   }
 
