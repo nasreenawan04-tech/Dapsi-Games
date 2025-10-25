@@ -59,14 +59,46 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
-        <ProtectedRoute path="/dashboard" component={Dashboard} />
-        <ProtectedRoute path="/planner" component={Planner} />
-        <ProtectedRoute path="/leaderboard" component={Leaderboard} />
-        <ProtectedRoute path="/rewards" component={Rewards} />
-        <ProtectedRoute path="/profile" component={Profile} />
-        <ProtectedRoute path="/activity" component={Activity} />
-        <ProtectedRoute path="/friends" component={Friends} />
-        <ProtectedRoute path="/groups" component={Groups} />
+        <Route path="/dashboard">
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/planner">
+          <ProtectedRoute>
+            <Planner />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/leaderboard">
+          <ProtectedRoute>
+            <Leaderboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/rewards">
+          <ProtectedRoute>
+            <Rewards />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/profile">
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/activity">
+          <ProtectedRoute>
+            <Activity />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/friends">
+          <ProtectedRoute>
+            <Friends />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/groups">
+          <ProtectedRoute>
+            <Groups />
+          </ProtectedRoute>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </>
