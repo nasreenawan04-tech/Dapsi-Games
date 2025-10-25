@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { auth, signUpWithEmail, signInWithEmail, logOut, resetPassword as firebaseResetPassword, getUserProfile } from "@/lib/firebase";
+import { auth, signUpWithEmail, signInWithEmail, logOut, resetPassword as firebaseResetPassword, getUserProfile, updateStreak } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 interface User {
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        await updateStreak(firebaseUser.uid);
         const profile = await getUserProfile(firebaseUser.uid);
         if (profile) {
           setUser({

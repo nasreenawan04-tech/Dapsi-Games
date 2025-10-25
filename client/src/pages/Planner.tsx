@@ -9,7 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createTask, getUserTasks, updateTask, deleteTask as deleteTaskFromDB, completeTask } from "@/lib/firebase";
+import { createTask, getUserTasks, updateTask, deleteTask as deleteTaskFromDB, completeTask, checkAndUnlockBadges } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Planner() {
@@ -66,11 +66,21 @@ function PlannerContent() {
     try {
       if (!currentStatus) {
         const xpEarned = await completeTask(taskId, user!.id);
+        const newBadges = await checkAndUnlockBadges(user!.id);
         await refreshUser();
         toast({
           title: "Task Completed! 🎉",
           description: `You earned ${xpEarned} XP!`,
         });
+
+        if (newBadges && newBadges.length > 0) {
+          setTimeout(() => {
+            toast({
+              title: "🏆 New Badge Unlocked!",
+              description: `You've earned ${newBadges.length} new badge${newBadges.length > 1 ? 's' : ''}!`,
+            });
+          }, 1000);
+        }
       } else {
         await updateTask(taskId, { completed: false });
       }

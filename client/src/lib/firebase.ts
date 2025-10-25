@@ -677,7 +677,7 @@ export const getFriendsLeaderboard = async (userId: string, limitCount: number =
   const friendIds = friends.map(f => f.id);
   friendIds.push(userId);
   
-  const leaderboard = [];
+  const leaderboard: any[] = [];
   
   for (const friendId of friendIds) {
     const userDoc = await getDoc(doc(db, "users", friendId));
@@ -689,7 +689,7 @@ export const getFriendsLeaderboard = async (userId: string, limitCount: number =
     }
   }
   
-  leaderboard.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+  leaderboard.sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0));
   
   return leaderboard.slice(0, limitCount).map((user, index) => ({
     rank: index + 1,
@@ -803,7 +803,7 @@ export const getGroupLeaderboard = async (groupId: string) => {
   );
   
   const membersSnapshot = await getDocs(membersQuery);
-  const leaderboard = [];
+  const leaderboard: any[] = [];
   
   for (const memberDoc of membersSnapshot.docs) {
     const userId = memberDoc.data().userId;
@@ -818,7 +818,7 @@ export const getGroupLeaderboard = async (groupId: string) => {
     }
   }
   
-  leaderboard.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+  leaderboard.sort((a: any, b: any) => (b.xp || 0) - (a.xp || 0));
   
   return leaderboard.map((user, index) => ({
     rank: index + 1,
