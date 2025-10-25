@@ -121,62 +121,103 @@ export const updateTask = async (taskId: string, updates: any) => {
 };
 
 export const deleteTask = async (taskId: string) => {
-  await deleteDoc(doc(db, "tasks", taskId));
+  try {
+    await deleteDoc(doc(db, "tasks", taskId));
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    throw error;
+  }
 };
 
 export const completeTask = async (taskId: string, userId: string) => {
-  const taskRef = doc(db, "tasks", taskId);
-  const taskDoc = await getDoc(taskRef);
-  
-  if (taskDoc.exists() && !taskDoc.data().completed) {
-    await updateDoc(taskRef, { 
-      completed: true,
-      completedAt: Timestamp.now()
-    });
-    const xpReward = taskDoc.data().xpReward || 10;
-    await updateUserXP(userId, xpReward);
-    return xpReward;
+  try {
+    const taskRef = doc(db, "tasks", taskId);
+    const taskDoc = await getDoc(taskRef);
+    
+    if (taskDoc.exists() && !taskDoc.data().completed) {
+      await updateDoc(taskRef, { 
+        completed: true,
+        completedAt: Timestamp.now()
+      });
+      const xpReward = taskDoc.data().xpReward || 10;
+      await updateUserXP(userId, xpReward);
+      return xpReward;
+    }
+    
+    return 0;
+  } catch (error) {
+    console.error("Error completing task:", error);
+    throw error;
   }
-  
-  return 0;
 };
+
+// Enable offline persistence
+import { enableIndexedDbPersistence } from "firebase/firestore";
+
+// Initialize offline persistence (only runs once)
+try {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('The current browser does not support offline persistence');
+    }
+  });
+} catch (error) {
+  console.error("Error enabling offline persistence:", error);
+}
 
 // Pomodoro session functions
 export const recordPomodoroSession = async (userId: string, duration: number, xpEarned: number) => {
-  await addDoc(collection(db, "pomodoroSessions"), {
-    userId,
-    duration,
-    xpEarned,
-    completedAt: Timestamp.now(),
-  });
-  
-  await updateUserXP(userId, xpEarned);
+  try {
+    await addDoc(collection(db, "pomodoroSessions"), {
+      userId,
+      duration,
+      xpEarned,
+      completedAt: Timestamp.now(),
+    });
+    
+    await updateUserXP(userId, xpEarned);
+  } catch (error) {
+    console.error("Error recording pomodoro session:", error);
+    throw error;
+  }
 };
 
 // Leaderboard functions
 export const getLeaderboard = async (limitCount: number = 10) => {
-  const q = query(
-    collection(db, "users"),
-    orderBy("xp", "desc"),
-    limit(limitCount)
-  );
-  
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc, index) => ({
-    rank: index + 1,
-    ...doc.data(),
-  }));
+  try {
+    const q = query(
+      collection(db, "users"),
+      orderBy("xp", "desc"),
+      limit(limitCount)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc, index) => ({
+      rank: index + 1,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error fetching leaderboard:", error);
+    return [];
+  }
 };
 
 // Badge functions
 export const getUserBadges = async (userId: string) => {
-  const q = query(
-    collection(db, "userBadges"),
-    where("userId", "==", userId)
-  );
-  
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => doc.data());
+  try {
+    const q = query(
+      collection(db, "userBadges"),
+      where("userId", "==", userId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => doc.data());
+  } catch (error) {
+    console.error("Error fetching user badges:", error);
+    return [];
+  }
 };
 
 export const unlockBadge = async (userId: string, badgeId: string) => {
