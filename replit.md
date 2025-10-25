@@ -1,113 +1,7 @@
 # DapsiGames - Gamified Study & Productivity Hub
 
 ## Overview
-DapsiGames is a comprehensive study and productivity application designed to transform studying into an engaging, gamified experience for students. It incentivizes users with XP points, badges, and leaderboard rankings for completing study tasks, maintaining focus, and achieving goals. The project aims to motivate students aged 13-25 by making learning more interactive and rewarding.
-
-## Recent Changes
-### October 25, 2025 - Website Transformation (COMPLETED)
-- **Complete Website Structure**: Transformed the app into a full-featured website with public-facing pages
-  - Created About page with company mission, vision, values, and team information
-  - Created Features page with comprehensive feature showcase and benefits
-  - Created Pricing page with Free and Premium plan comparison
-  - Created Contact page with contact form and support information
-  - Created FAQ page with accordion-style questions and answers
-  - Enhanced Home page with SEO meta tags and Footer integration
-- **Navigation Enhancement**: Updated Navigation component to support both public and authenticated sections
-  - Public navigation shows: Home, About, Features, Pricing, Contact, FAQ
-  - Authenticated navigation shows: Dashboard, Planner, Leaderboard, Friends, Groups, Activity, Rewards, Store, Profile
-  - Responsive mobile menu for both public and authenticated states
-- **Footer Component**: Created comprehensive footer with links, social media, and company information
-  - Product, Company, and Legal link sections
-  - Social media icons (Twitter, GitHub, LinkedIn, Email)
-  - Proper routing with wouter Link component
-- **SEO Implementation**: Added meta tags and page titles to all pages for better search engine optimization
-- **Code Quality**: Fixed React errors (invalid hook calls, nested anchor tags)
-### October 25, 2025 - Phase 7: Integrations & PWA Setup (COMPLETED)
-- **Progressive Web App (PWA) Implementation**: Full PWA support for installable, offline-capable experience
-  - Created comprehensive manifest.json with app metadata, icons, shortcuts, and display settings
-  - Generated and configured PWA icons (192x192, 512x512) for app installation
-  - Integrated vite-plugin-pwa with automated service worker generation
-  - Configured intelligent caching strategies: CacheFirst for fonts, StaleWhileRevalidate for Firebase Storage, NetworkFirst for API calls
-  - Added PWA meta tags for iOS and Android compatibility (apple-mobile-web-app-capable, theme-color)
-  - Offline detection with user notification when connection is lost
-- **Google Analytics Integration**: Complete user behavior tracking and analytics
-  - Created analytics.ts library with initGA(), trackPageView(), and trackEvent() functions
-  - Implemented useAnalytics hook for automatic page view tracking on route changes
-  - Google Analytics initializes on app load and tracks all navigation
-  - Ready for VITE_GA_MEASUREMENT_ID environment variable configuration
-- **Google AdSense Integration**: Monetization infrastructure for ad revenue
-  - Created AdSense component with configurable ad slots and formats
-  - Implemented AdSenseScript component for global script loading
-  - Integrated into App.tsx for site-wide ad support
-  - Ready for VITE_ADSENSE_CLIENT_ID environment variable configuration
-  - Non-intrusive ad placement structure that won't affect user experience
-- **Stripe Premium Subscriptions**: Complete payment processing for premium membership
-  - Installed @stripe/stripe-js and @stripe/react-stripe-js client libraries
-  - Created Subscribe page with premium features showcase and secure payment form
-  - Implemented /api/create-subscription backend endpoint with Firebase Auth verification
-  - Automatic Stripe customer creation and subscription management
-  - Stores stripeCustomerId and stripeSubscriptionId in Firestore user documents
-  - $5/month premium subscription with automatic product/price creation
-  - Premium features: Ad-free experience, custom themes, advanced analytics, cloud sync, priority support
-  - Ready for VITE_STRIPE_PUBLIC_KEY and STRIPE_SECRET_KEY configuration
-- **Security & Best Practices**:
-  - All payment processing secured with Firebase Auth token verification
-  - Stripe API version set to latest (2025-09-30.clover)
-  - Graceful fallbacks when API keys not configured (warnings instead of errors)
-  - Environment variables properly prefixed with VITE_ for client-side access
-
-### October 25, 2025 - Phase 6: Gamification Logic & Rewards (COMPLETED)
-- **Level-Up Celebrations**: Implemented visual level-up celebrations with confetti animations
-  - Created LevelUpModal component with confetti effects similar to BadgeUnlockModal
-  - Backend endpoints (/api/pomodoro/complete, /api/tasks/:taskId/complete) now return `leveledUp` boolean by comparing old vs new levels
-  - Integrated LevelUpModal in both PomodoroTimer and Planner components for seamless user experience
-  - Badge unlock notifications properly delayed to avoid clashing with level-up celebrations
-- **PDF Export for Study Planner**: Added comprehensive PDF export functionality
-  - Integrated jsPDF and jspdf-autotable libraries for professional PDF generation
-  - Export includes user info header, pending tasks table, completed tasks table, and branding footer
-  - Proper handling of Firestore timestamps and missing due dates
-  - Download button disabled when no tasks available
-- **Sound Packs in Virtual Store**: Expanded store inventory with ambient sound options
-  - Added 6 sound pack items: Rainfall Ambience (300 XP), Coffee Shop (300 XP), Forest Sounds (350 XP), Lo-fi Beats (400 XP), White Noise (250 XP), Ocean Waves (350 XP)
-  - Created dedicated "Sounds" tab in Store page alongside existing categories
-  - Sound packs use existing purchase pipeline and are purchasable with XP
-  - Each item includes descriptive icons and color-coded backgrounds
-- **System Integrity**: All Phase 6 features passed comprehensive architect review with no security issues or regressions in existing XP, badge, or task systems
-
-### October 25, 2025 - Phase 5: Core Back-End Integration (COMPLETED)
-- **Secure Backend API Integration**: Implemented Express.js backend with Firebase Admin SDK for secure server-side operations
-  - Set up Firebase Admin SDK with service account credentials (FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY)
-  - Created Firebase ID token verification middleware for all protected endpoints
-  - Created `/api/pomodoro/complete` endpoint - server-side XP calculation (25min=50XP, 50min=100XP), session recording, automatic badge checking
-  - Created `/api/tasks/:taskId/complete` endpoint - task ownership validation, XP rewards from task documents, automatic badge notifications
-  - Created `/api/leaderboard` endpoint - efficient global leaderboard retrieval with proper ranking
-  - Created `/api/badges/check` endpoint - automated badge unlocking based on achievements (8 badges: First Focus, Task Master, Streak Star, Master Learner, Social Butterfly, Group Leader, Early Bird, Night Owl)
-  - Created `/api/users/streak` endpoint - daily streak management with same-day inflation prevention via calendar date normalization
-  - Created `/api/users/stats` endpoint - user statistics aggregation (total sessions, tasks completed, badges unlocked)
-- **Frontend Integration**: Updated frontend components to use new backend APIs with proper authentication
-  - All API calls send Firebase ID token in Authorization header for verification
-  - PomodoroTimer component uses backend API with automatic badge unlock notifications
-  - Planner component uses backend API for task completion with XP and badge rewards
-  - Leaderboard component uses backend API for global leaderboard data
-  - Created `client/src/lib/api.ts` with helper functions and automatic fallback to direct Firebase calls for resilience
-- **Security & Integrity**:
-  - All XP calculations happen server-side - clients cannot manipulate XP values
-  - Task completion validates ownership before awarding XP - prevents cross-user manipulation
-  - Streak endpoint prevents same-day inflation - only one increment per calendar day
-  - Firebase ID tokens verified on every protected route - unauthorized requests rejected with 401
-  - UserId derived from verified token, never trusted from request body
-- **Enhanced User Experience**: Automatic badge unlock notifications with toast messages when completing sessions or tasks
-
-### October 25, 2025 - Phase 4: Email Verification Implementation
-- **Added Email Verification**: Implemented Firebase email verification to secure user accounts
-  - New users receive verification email automatically upon signup
-  - Unverified users are redirected to verification page before accessing protected content
-  - Created dedicated EmailVerification page with resend functionality
-  - Added 60-second cooldown timer for resend requests
-  - Updated AuthContext to track emailVerified status
-  - Modified ProtectedRoute component to enforce verification requirement
-- **Enhanced Security**: Users must verify their email address before accessing any app features
-- **Improved UX**: Clear messaging and easy resend option for verification emails
+DapsiGames is a comprehensive study and productivity application designed to transform studying into an engaging, gamified experience for students aged 13-25. It incentivizes users with XP points, badges, and leaderboard rankings for completing study tasks, maintaining focus, and achieving goals, aiming to make learning more interactive and rewarding. The project includes a full-featured website with public-facing pages, PWA support, analytics, and monetization capabilities.
 
 ## User Preferences
 - Clean, minimal, gamified interface
@@ -129,42 +23,48 @@ The application is built with a modern web stack, emphasizing a gamified user ex
 
 ### Technical Implementations
 - **Frontend**: React 19 with TypeScript, Wouter for routing, and TailwindCSS for styling. State management is handled via React Context API and TanStack Query.
-- **Authentication System**: Comprehensive authentication system using Firebase Authentication featuring:
-  - Email/password registration with automatic verification email dispatch
-  - Email verification requirement before accessing protected content
-  - Secure login with session persistence
-  - Password reset functionality
-  - Real-time auth state management via Firebase Auth observers
-  - Protected routes that redirect unverified users to verification page
-  - Email verification page with resend capability and cooldown timer
-- **Gamified Dashboard**: Displays user XP, level progression, daily goals, recent activity, and quick stats, providing a central hub for user progress.
-- **Pomodoro Focus Timer**: Customizable timer with XP rewards upon completion, integrated with Firebase to record sessions and update user XP.
-- **Study Planner**: Enables CRUD operations for study tasks, subject categorization, due date tracking, and XP rewards, with all data stored in Firestore.
-- **Real-time Leaderboard**: Features global and filtered leaderboards (All Time, Weekly, Daily, Friends) based on XP, powered by real-time Firestore queries.
-- **Badges & Rewards System**: Tracks and automatically unlocks 8 distinct badges based on user milestones (e.g., "First Focus," "Master Learner"), with real-time notifications.
-- **User Profile**: Allows users to manage account information, view XP history, statistics, theme customization, and showcase unlocked badges.
-- **Friend System**: Supports searching for users, sending/receiving friend requests, and managing friend lists, including a friend-specific leaderboard.
-- **Study Groups**: Facilitates creation, joining, and management of study groups, complete with group leaderboards.
-- **Activity Feed**: Provides a global, real-time feed of user study activities, showing recent Pomodoro sessions and task completions.
+- **Authentication System**: Comprehensive Firebase Authentication with email/password, verification, password reset, and real-time state management. Email verification is enforced before accessing protected content.
+- **Gamified Dashboard**: Displays user XP, level progression, daily goals, recent activity, and quick stats.
+- **Pomodoro Focus Timer**: Customizable timer with server-side XP rewards and session recording.
+- **Study Planner**: CRUD operations for study tasks, subject categorization, due date tracking, and server-side XP rewards, with PDF export functionality.
+- **Real-time Leaderboard**: Global and filtered leaderboards (All Time, Weekly, Daily, Friends) based on XP, powered by Firestore.
+- **Badges & Rewards System**: Tracks and automatically unlocks 8 distinct badges based on user milestones with real-time notifications and level-up celebrations.
+- **User Profile**: Manages account info, XP history, stats, theme customization, and unlocked badges.
+- **Friend System**: Supports user search, friend requests, and friend lists including a friend-specific leaderboard.
+- **Study Groups**: Facilitates creation, joining, and management of study groups with group leaderboards.
+- **Activity Feed**: Real-time global feed of user study activities.
+- **Virtual Store**: Includes purchasable items like sound packs (e.g., Rainfall Ambience, Lo-fi Beats) using XP.
+- **PWA Implementation**: Full Progressive Web App support with manifest, icons, service worker for caching, and offline capabilities.
+- **Website Structure**: Transformed into a full-featured website with public-facing pages (About, Features, Pricing, Contact, FAQ) and enhanced navigation and footer components.
+- **SEO Implementation**: Comprehensive SEO system with:
+  - Dynamic meta tags (title, description, keywords) per page
+  - Open Graph and Twitter Card support for social sharing
+  - Canonical URLs for all pages
+  - JSON-LD structured data (Organization and WebSite schemas)
+  - robots.txt for search engine crawling guidelines
+  - sitemap.xml for search engine indexing
+  - Unique, descriptive metadata for all public pages
 
 ### System Design Choices
-- **Hybrid Architecture**: Combines client-side Firebase for real-time features with server-side Express.js backend for core game logic
-  - Frontend uses Firebase Authentication and real-time listeners for UI updates
-  - Backend handles XP calculations, badge unlocking, and data validation via Firebase Admin SDK
-  - API layer provides fallback mechanisms to direct Firebase calls for resilience
-- **Real-time Data**: Leverages Firebase's real-time capabilities for dynamic updates across leaderboards, activity feeds, and user progress.
-- **Modular Component Architecture**: Organized project structure with reusable components and dedicated contexts for state management.
-- **Secure Server-Side Operations**: Critical game logic executed on backend to prevent client-side manipulation of XP and badges.
+- **Hybrid Architecture**: Combines client-side Firebase for real-time features with a server-side Express.js backend for core game logic, secure XP calculations, and badge unlocking via Firebase Admin SDK.
+- **Real-time Data**: Leverages Firebase for dynamic updates across the application.
+- **Modular Component Architecture**: Organized project structure with reusable components.
+- **Secure Server-Side Operations**: Critical game logic (XP, badges) executed on the backend to prevent client-side manipulation.
 
 ## External Dependencies
 - **Firebase**:
-    - **Firebase Firestore**: Primary NoSQL database for all application data (users, tasks, sessions, badges, friends, groups, activities).
-    - **Firebase Authentication**: Manages user registration, login, session management, and password resets.
-    - **Firebase Admin SDK**: Server-side SDK for privileged Firestore access and secure operations.
+    - **Firebase Firestore**: Primary NoSQL database for all application data.
+    - **Firebase Authentication**: Manages user authentication.
+    - **Firebase Admin SDK**: Server-side SDK for privileged operations.
 - **Express.js**: Backend web framework for API endpoints.
-- **React**: Frontend library for building user interfaces.
+- **React**: Frontend library.
 - **Wouter**: Lightweight client-side routing.
-- **TailwindCSS**: Utility-first CSS framework for styling.
-- **Shadcn UI & Radix UI**: UI component libraries for accessible and customizable components.
-- **TanStack Query**: For data fetching, caching, and state management.
-- **Google Fonts**: For optimized font loading (Inter).
+- **TailwindCSS**: Utility-first CSS framework.
+- **Shadcn UI & Radix UI**: UI component libraries.
+- **TanStack Query**: For data fetching and state management.
+- **Google Fonts**: For typography.
+- **jsPDF & jspdf-autotable**: For PDF generation.
+- **vite-plugin-pwa**: For Progressive Web App functionality.
+- **Google Analytics**: For user behavior tracking.
+- **Google AdSense**: For monetization infrastructure.
+- **Stripe**: For premium subscription payment processing.
