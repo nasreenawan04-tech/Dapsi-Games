@@ -75,6 +75,7 @@ export default function Signup() {
                 placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
                 required
                 data-testid="input-name"
               />
@@ -87,6 +88,7 @@ export default function Signup() {
                 placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
                 data-testid="input-email"
               />
@@ -99,6 +101,7 @@ export default function Signup() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 required
                 minLength={6}
                 data-testid="input-password"

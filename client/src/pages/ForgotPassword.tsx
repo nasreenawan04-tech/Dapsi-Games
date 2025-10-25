@@ -64,6 +64,7 @@ export default function ForgotPassword() {
                   placeholder="student@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
                   data-testid="input-email"
                 />
