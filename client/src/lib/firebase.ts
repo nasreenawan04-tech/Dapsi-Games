@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, User } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, User } from "firebase/auth";
 import { initializeFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, where, Timestamp, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -33,6 +33,9 @@ export const signUpWithEmail = async (email: string, password: string, name: str
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const user = userCredential.user;
 
+  // Send email verification
+  await sendEmailVerification(user);
+
   // Create user document in Firestore
   await setDoc(doc(db, "users", user.uid), {
     id: user.uid,
@@ -46,6 +49,17 @@ export const signUpWithEmail = async (email: string, password: string, name: str
   });
 
   return user;
+};
+
+export const resendVerificationEmail = async () => {
+  const user = auth.currentUser;
+  if (user && !user.emailVerified) {
+    await sendEmailVerification(user);
+  } else if (!user) {
+    throw new Error("No user is currently signed in");
+  } else {
+    throw new Error("Email is already verified");
+  }
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
