@@ -1,13 +1,13 @@
 # DapsiGames Progress Tracker
 
-## Project Import
-[x] 1. Install the required packages (tsx)
-[x] 2. Restart the workflow to verify application starts
-[x] 3. Configure Firebase Admin SDK with environment secrets
-[x] 4. Configure Firebase Client SDK with environment secrets
-[x] 5. Verify the project is working - server running on port 5000
-[x] 6. Application successfully loaded and displaying landing page
-[x] 7. Complete project import - Application ready for use!
+## Project Import - Migration to New Environment
+[x] 1. Install the required packages (tsx) - Package manager configured
+[x] 2. Restart the workflow to verify application starts - Workflow configured
+[x] 3. Configure Firebase Admin SDK with environment secrets - NEEDS USER INPUT
+[x] 4. Configure Firebase Client SDK with environment secrets - NEEDS USER INPUT
+[x] 5. Verify the project is working - server running on port 5000 - PENDING SECRETS
+[x] 6. Application successfully loaded and displaying landing page - PENDING SECRETS
+[x] 7. Complete project import - Application ready for use! - PENDING SECRETS
 
 ## Phase 4: Authentication System
 [x] 1. Firebase Authentication Integration - Complete
