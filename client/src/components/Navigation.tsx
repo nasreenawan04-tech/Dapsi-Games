@@ -146,7 +146,7 @@ function Navigation() {
     );
   }
 
-  const navItems = [
+  const appNavItems = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/planner", icon: ListTodo, label: "Planner" },
     { href: "/leaderboard", icon: Trophy, label: "Leaderboard" },
@@ -161,24 +161,25 @@ function Navigation() {
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl" data-testid="link-home">
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl" data-testid="link-home">
             <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
               D
             </div>
-            DapsiGames
+            <span className="hidden sm:inline">DapsiGames</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
+          {/* Desktop Navigation - App Items */}
+          <div className="hidden xl:flex items-center gap-1">
+            {appNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.href;
               return (
                 <Link key={item.href} href={item.href}>
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
-                    className="gap-2"
+                    size="sm"
+                    className="gap-1.5"
                     data-testid={`link-${item.label.toLowerCase()}`}
                   >
                     <Icon className="h-4 w-4" />
@@ -188,6 +189,24 @@ function Navigation() {
               );
             })}
           </div>
+        </div>
+
+        {/* Desktop Navigation - Public Pages */}
+        <div className="hidden lg:flex items-center gap-1">
+          {publicNavItems.map((item) => {
+            const isActive = location === item.href;
+            return (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant={isActive ? "secondary" : "ghost"}
+                  size="sm"
+                  data-testid={`link-public-${item.label.toLowerCase()}`}
+                >
+                  {item.label}
+                </Button>
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-2">
@@ -205,7 +224,7 @@ function Navigation() {
           <Button
             variant="ghost"
             onClick={() => logout()}
-            className="hidden md:flex gap-2"
+            className="hidden xl:flex gap-2"
             data-testid="button-logout"
           >
             <LogOut className="h-4 w-4" />
@@ -216,7 +235,7 @@ function Navigation() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="xl:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             data-testid="button-mobile-menu"
           >
@@ -227,9 +246,10 @@ function Navigation() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t bg-background p-4 animate-slide-up">
+        <div className="xl:hidden border-t bg-background p-4 animate-slide-up">
           <div className="flex flex-col gap-2">
-            {navItems.map((item) => {
+            <div className="text-xs font-semibold text-muted-foreground px-2 mb-1">APP</div>
+            {appNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.href;
               return (
@@ -246,6 +266,24 @@ function Navigation() {
                 </Link>
               );
             })}
+            <div className="border-t my-2" />
+            <div className="text-xs font-semibold text-muted-foreground px-2 mb-1">WEBSITE</div>
+            {publicNavItems.map((item) => {
+              const isActive = location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => setMobileMenuOpen(false)}
+                    data-testid={`link-mobile-public-${item.label.toLowerCase()}`}
+                  >
+                    {item.label}
+                  </Button>
+                </Link>
+              );
+            })}
+            <div className="border-t my-2" />
             <Button
               variant="ghost"
               onClick={() => {

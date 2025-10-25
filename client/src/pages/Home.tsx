@@ -1,14 +1,11 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Trophy, Clock, ListChecks, Award, Zap, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import Footer from "@/components/Footer";
 
 export default function Home() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
 
   useEffect(() => {
     document.title = "DapsiGames - Gamified Study Platform | Study Smarter, Play Harder";
@@ -16,11 +13,7 @@ export default function Home() {
     if (metaDescription) {
       metaDescription.setAttribute("content", "Transform your study sessions into an epic adventure with DapsiGames. Earn XP, unlock badges, and compete with students worldwide. Join 10,000+ motivated learners.");
     }
-    
-    if (user) {
-      setLocation("/dashboard");
-    }
-  }, [user, setLocation]);
+  }, []);
 
   const features = [
     {
