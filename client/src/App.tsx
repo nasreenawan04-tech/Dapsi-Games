@@ -14,6 +14,7 @@ import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ForgotPassword from "@/pages/ForgotPassword";
+import EmailVerification from "@/pages/EmailVerification";
 import Dashboard from "@/pages/Dashboard";
 import Planner from "@/pages/Planner";
 import Leaderboard from "@/pages/Leaderboard";
@@ -59,6 +60,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/verify-email" component={EmailVerification} />
         <Route path="/dashboard">
           <ProtectedRoute>
             <Dashboard />

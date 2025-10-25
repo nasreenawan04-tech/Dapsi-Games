@@ -37,9 +37,9 @@ export default function Signup() {
       await signup(name, email, password);
       toast({
         title: "Welcome to DapsiGames!",
-        description: "Your account has been created successfully.",
+        description: "Please check your email to verify your account.",
       });
-      setLocation("/dashboard");
+      setLocation("/verify-email");
     } catch (error) {
       toast({
         title: "Signup failed",
