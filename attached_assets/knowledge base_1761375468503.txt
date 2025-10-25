@@ -1,0 +1,668 @@
+﻿Product Requirements Document: DapsiGames
+________________
+
+
+1. Overview
+App/Website Name: DapsiGames
+Description:
+ DapsiGames is a Study + Productivity Hub that transforms studying into a gamified experience for students. It rewards users with XP points, badges, and leaderboard rankings for completing study tasks, staying focused, and meeting goals — merging productivity with fun competition.
+The platform is designed to help students boost focus, track progress, and stay motivated while studying. With built-in Pomodoro timers, leaderboards, and digital planners, DapsiGames redefines how learners engage with their studies.
+Primary Target Audience:
+ Students aged 13–25 (high school to university level) who seek engaging, structured, and goal-oriented study experiences.
+Purpose:
+ To motivate students through gamification, progress tracking, and rewards — making learning both productive and entertaining.
+________________
+
+
+2. Essential Core Features
+* Firebase Authentication System:
+
+   * Secure Sign Up, Login, and Logout with email verification.
+
+   * Support for password reset and session persistence.
+
+      * Firestore Database Integration:
+
+         * Store user profiles, XP points, tasks, and achievements.
+
+         * Real-time updates for leaderboards and progress tracking.
+
+            * Gamified Dashboard:
+
+               * Displays user name, profile avatar, XP level, and badges.
+
+               * Daily and weekly goals tracker.
+
+               * “Start Focus Session” button with Pomodoro timer.
+
+               * Progress bars for time spent and points earned.
+
+                  * Pomodoro Focus Timer:
+
+                     * Customizable 25/50-minute timers with start/pause/reset controls.
+
+                     * Automatically awards XP for completed sessions.
+
+                     * Includes ambient study sound or background music options.
+
+                        * Leaderboard Page:
+
+                           * Real-time leaderboard showing top students ranked by total XP.
+
+                           * Global and friends-based ranking options.
+
+                           * Displays user position and XP growth trends.
+
+                              * Study Planner:
+
+                                 * Add/edit/delete study tasks with due dates.
+
+                                 * Organize by subjects or categories.
+
+                                 * Completion awards XP and streak bonuses.
+
+                                    * Reward & Badge System:
+
+                                       * Level progression (Novice → Scholar → Master Learner).
+
+                                       * Unlock achievements for milestones and consistency.
+
+                                       * Animated popups for new rewards and badges.
+
+                                          * Responsive Design:
+
+                                             * Tailwind CSS-based adaptive layout for all screen sizes.
+
+                                             * Optimized for both desktop and mobile browsers.
+
+                                                * SEO Optimization:
+
+                                                   * Page title: “DapsiGames — Study Smarter, Play Harder”
+
+                                                   * Meta descriptions and Open Graph tags for sharing.
+
+                                                   * Fast-loading assets and responsive images.
+
+________________
+
+
+3. Tech Stack
+Frontend:
+                                                      * Next.js (React framework for SSR and SEO)
+
+                                                      * Tailwind CSS (for modern and responsive UI)
+
+Backend:
+                                                         * Firebase Authentication (user accounts, secure sessions)
+
+                                                         * Firebase Firestore (realtime database for tasks, XP, leaderboard)
+
+Hosting & Deployment:
+                                                            * Vercel (frontend + API deployment)
+
+                                                            * Environment variables configured securely for Firebase
+
+Integrations & APIs:
+                                                               * Google AdSense (for monetization)
+
+                                                               * Stripe or Gumroad (for premium plans and digital product sales)
+
+                                                               * Firebase Functions (XP calculations, scheduled streak resets)
+
+Additional Requirements:
+                                                                  * Progressive Web App (PWA) features for mobile-like usability
+
+                                                                  * Secure HTTPS configuration on Vercel
+
+                                                                  * WebSocket or Firestore listeners for real-time leaderboard updates
+
+________________
+
+
+4. Design Preferences
+Interface Style:
+ Clean, minimal, and gamified — built for focus and motivation.
+Soft gradients, bright accents, and smooth transitions create a positive learning atmosphere.
+Color Palette:
+                                                                     * Primary: Bright Blue (#3b82f6) – symbolizes focus and energy
+
+                                                                     * Secondary: Teal (#14b8a6) – represents calm productivity
+
+                                                                     * Accent: Purple (#8b5cf6) – adds playfulness and gamified appeal
+
+                                                                     * Background: White (#ffffff) with subtle gray sections (#f9fafb)
+
+                                                                     * Text: Dark Slate (#1e293b) for strong readability
+
+Typography:
+                                                                        * Headings: Inter (modern, geometric sans-serif)
+
+                                                                        * Body: System UI font stack (legible and fast-loading)
+
+Design Considerations:
+                                                                           * Card-based dashboard layout for modular structure
+
+                                                                           * Animated progress bars and XP meters
+
+                                                                           * Badge icons and streak fire animations
+
+                                                                           * Hover and motion effects for interactivity
+
+                                                                           * Dark mode option for extended study sessions
+
+________________
+
+
+5. All Screens / Pages
+Home Page (/)
+Route: /
+ UI Elements:
+                                                                              * Hero section with tagline “Study Smarter, Play Harder”
+
+                                                                              * Call-to-action: “Start Free” / “Log In”
+
+                                                                              * Leaderboard preview (top 3 users)
+
+                                                                              * Feature highlights (Timer, Planner, Rewards)
+
+                                                                              * Testimonials or motivational quotes
+
+Conditional Elements:
+                                                                                 * Authenticated users redirected to dashboard
+
+________________
+
+
+Authentication Pages
+Login Page (/login)
+ Route: /login
+                                                                                    * Email + Password input fields
+
+                                                                                    * “Remember me” checkbox
+
+                                                                                    * Forgot password link
+
+                                                                                    * Redirect to dashboard on success
+
+Signup Page (/signup)
+ Route: /signup
+                                                                                       * Name, Email, Password fields
+
+                                                                                       * Terms checkbox
+
+                                                                                       * Redirect to email verification screen
+
+Forgot Password Page (/forgot-password)
+ Route: /forgot-password
+                                                                                          * Email input
+
+                                                                                          * Reset password link
+
+                                                                                          * Success/error message display
+
+________________
+
+
+Main Application Pages
+Dashboard (/dashboard)
+                                                                                             * Welcome banner with user name & XP stats
+
+                                                                                             * Pomodoro timer widget
+
+                                                                                             * Daily goals section with completion tracking
+
+                                                                                             * Weekly progress graph
+
+                                                                                             * Earned badges and recent activities
+
+Leaderboard (/leaderboard)
+                                                                                                * Global ranking table (XP-based)
+
+                                                                                                * Search and filter users
+
+                                                                                                * Highlight logged-in user’s position
+
+                                                                                                * XP trend chart
+
+Study Planner (/planner)
+                                                                                                   * Add/edit/delete tasks
+
+                                                                                                   * Sort by subject or deadline
+
+                                                                                                   * Completion XP bonuses
+
+                                                                                                   * Calendar view for weekly sessions
+
+Rewards (/rewards)
+                                                                                                      * Badge showcase
+
+                                                                                                      * XP redemption store (themes, icons, avatars)
+
+Profile (/profile)
+                                                                                                         * Profile picture & info edit
+
+                                                                                                         * XP history and achievements
+
+                                                                                                         * Theme customization options
+
+________________
+
+
+6. App Menu & Navigation Structure
+Main Navigation (Desktop):
+                                                                                                            * Dashboard
+
+                                                                                                            * Planner
+
+                                                                                                            * Leaderboard
+
+                                                                                                            * Rewards
+
+                                                                                                            * Profile
+
+                                                                                                            * Logout
+
+Mobile Navigation:
+                                                                                                               * Hamburger menu → Slide-out sidebar
+
+Behavior:
+                                                                                                                  * Guests can only view limited homepage
+
+                                                                                                                  * Authenticated users access full features
+
+                                                                                                                  * Breadcrumbs for deep navigation
+
+                                                                                                                  * Persistent top bar with XP progress indicator
+
+________________
+
+
+7. User Flow
+New User Journey:
+                                                                                                                     1. Visits homepage and signs up.
+
+                                                                                                                     2. Verifies email → Redirects to onboarding tutorial.
+
+                                                                                                                     3. Lands on Dashboard with 0 XP.
+
+                                                                                                                     4. Starts first focus session via Pomodoro timer.
+
+                                                                                                                     5. Completes task → earns XP → visible on leaderboard.
+
+                                                                                                                     6. Unlocks first badge (“First Focus”).
+
+                                                                                                                     7. Returns daily to maintain streak and climb ranks.
+
+Returning User Journey:
+                                                                                                                        1. Logs in → Dashboard loads with updated stats.
+
+                                                                                                                        2. Checks leaderboard rank and new achievements.
+
+                                                                                                                        3. Adds new tasks or continues existing goals.
+
+                                                                                                                        4. Completes sessions and earns XP automatically.
+
+________________
+
+
+8. Monetization Plan (2026-Ready)
+                                                                                                                           * Ad Revenue:
+ Integrate Google AdSense for non-intrusive banner ads in dashboard.
+
+                                                                                                                           * Premium Membership:
+
+                                                                                                                              * $5/month subscription
+
+                                                                                                                              * Unlocks custom themes, analytics, cloud sync, and ad-free experience.
+
+                                                                                                                                 * Digital Products:
+ Offer downloadable “Focus Planners” and printable study PDFs via Gumroad or Stripe integration.
+
+________________
+
+
+9. Future Expansion
+                                                                                                                                    * AI Study Assistant: personalized goal suggestions and note summaries.
+
+                                                                                                                                    * Mobile app using React Native for iOS/Android.
+
+                                                                                                                                    * “Global Study Challenge” monthly events with exclusive badges.
+
+                                                                                                                                    * Institutional version for schools or tutoring programs.
+
+________________
+
+
+✅ Final Summary:
+ DapsiGames is a full-stack gamified web application that revolutionizes student productivity by merging study tools with gaming motivation. Built with Next.js, Firebase, and Tailwind CSS, it delivers real-time progress tracking, leaderboards, and a fun user experience — creating a future-ready platform for focused learners worldwide.
+
+
+
+
+
+
+
+
+
+
+Project Implementation Plan: DapsiGames
+________________
+
+
+Implementation Plan Overview
+Based on the PRD analysis, DapsiGames is a Progressive Web Application (PWA) designed to gamify the study experience for students through a productivity-focused, reward-based system.
+It will be developed as a full-stack web app using Next.js, Firebase, and Tailwind CSS, featuring responsive design and real-time interactivity.
+The implementation is divided into 8 structured phases, ensuring modular, scalable, and test-driven development.
+Development Phases Summary
+                                                                                                                                       * Phase 1–3: Front-End Implementation (UI/UX, Core Components, Advanced Features)
+
+                                                                                                                                       * Phase 4: Authentication System (Firebase Auth Integration)
+
+                                                                                                                                       * Phase 5–6: Back-End Integration (Core Features, Gamification Logic)
+
+                                                                                                                                       * Phase 7: Third-Party Integrations & PWA Enhancements
+
+                                                                                                                                       * Phase 8: Final Review, QA, and Optimization
+
+________________
+
+
+Phase 1: Foundation & Core UI Setup
+Objective
+Establish the technical foundation, UI/UX structure, and design system for the web app using Next.js and Tailwind CSS.
+Tasks
+1.1 Project Setup
+                                                                                                                                          * Initialize Next.js project with TypeScript.
+
+                                                                                                                                          * Configure Tailwind CSS with custom palette:
+
+                                                                                                                                             * Primary: #3b82f6 (Bright Blue)
+
+                                                                                                                                             * Secondary: #14b8a6 (Teal)
+
+                                                                                                                                             * Accent: #8b5cf6 (Purple)
+
+                                                                                                                                             * Background: #f9fafb (Light Gray)
+
+                                                                                                                                                * Set up Next.js routing and layouts.
+
+                                                                                                                                                * Install dependencies (React Icons, Framer Motion).
+
+                                                                                                                                                * Create folder structure: /components, /pages, /hooks, /utils.
+
+1.2 Layout Components
+                                                                                                                                                   * Header with navigation and XP bar.
+
+                                                                                                                                                   * Responsive Sidebar navigation.
+
+                                                                                                                                                   * Footer with links and copyright.
+
+                                                                                                                                                   * Global Layout wrapper.
+
+                                                                                                                                                   * Mobile menu with animated transitions.
+
+1.3 Basic Pages
+                                                                                                                                                      * Home page (/) — hero section, CTA buttons.
+
+                                                                                                                                                      * Login (/login), Signup (/signup), and Forgot Password (/forgot-password).
+
+                                                                                                                                                      * Error page (/404).
+
+1.4 Design System Components
+                                                                                                                                                         * Button (primary, secondary, ghost).
+
+                                                                                                                                                         * Card and Badge components.
+
+                                                                                                                                                         * Input and Form components.
+
+                                                                                                                                                         * Modals, Loading Spinners, and Skeletons.
+
+Expected Deliverables
+✅ Fully configured Next.js + Tailwind base
+✅ Global navigation and responsive layout
+✅ Reusable component library
+✅ Core UI consistency across all devices
+________________
+
+
+Phase 2: Dashboard & Core Study Features
+Objective
+Build the main student dashboard, Pomodoro timer, and task management system for productivity tracking.
+Tasks
+2.1 Dashboard
+                                                                                                                                                            * Display XP stats, streaks, achievements.
+
+                                                                                                                                                            * Create quick access cards (Tasks, Leaderboard, Planner).
+
+                                                                                                                                                            * Add progress graphs using chart libraries.
+
+                                                                                                                                                            * Implement onboarding overlay for first-time users.
+
+2.2 Pomodoro Timer
+                                                                                                                                                               * Customizable durations (25, 50 min).
+
+                                                                                                                                                               * Start/Pause/Reset functionality.
+
+                                                                                                                                                               * XP gained after each session.
+
+                                                                                                                                                               * Add ambient sounds and background music toggle.
+
+                                                                                                                                                               * Log session history.
+
+2.3 Task Management
+                                                                                                                                                                  * CRUD operations for tasks.
+
+                                                                                                                                                                  * Categorization (subject/difficulty).
+
+                                                                                                                                                                  * XP and streak bonus for completion.
+
+                                                                                                                                                                  * Filters for deadline and priority.
+
+                                                                                                                                                                  * Progress animations on completion.
+
+2.4 Study Planner
+                                                                                                                                                                     * Calendar-based view.
+
+                                                                                                                                                                     * Assign tasks to specific dates.
+
+                                                                                                                                                                     * Visual progress indicators per subject.
+
+Expected Deliverables
+✅ Gamified Dashboard (XP, streaks, goals)
+✅ Pomodoro Timer integrated with XP logic
+✅ Task Manager with progress tracking
+✅ Study Planner prototype ready
+________________
+
+
+Phase 3: Gamification & Social Features
+Objective
+Implement gamification systems — levels, badges, leaderboards, and social engagement.
+Tasks
+3.1 Profile & Badges
+                                                                                                                                                                        * Profile page with user info, XP history.
+
+                                                                                                                                                                        * Badge system with unlock animations.
+
+                                                                                                                                                                        * Milestone and achievement tracking.
+
+                                                                                                                                                                        * Profile picture and theme customization.
+
+3.2 Leaderboards
+                                                                                                                                                                           * Global leaderboard (XP-based).
+
+                                                                                                                                                                           * Real-time updates via Firestore listeners.
+
+                                                                                                                                                                           * Friend-based leaderboards and rank comparison.
+
+                                                                                                                                                                           * Filters (daily, weekly, all-time).
+
+3.3 Social Features
+                                                                                                                                                                              * Friend invite system (via Firebase links).
+
+                                                                                                                                                                              * Study groups with XP-sharing challenges.
+
+                                                                                                                                                                              * Group leaderboard and mini events.
+
+                                                                                                                                                                              * Messaging or announcement feed (basic version).
+
+Expected Deliverables
+✅ Dynamic profile and badge system
+✅ Real-time leaderboard with Firestore
+✅ Social and group study features
+✅ Engagement-enhancing gamification layer
+________________
+
+
+Phase 4: Authentication System
+Objective
+Integrate Firebase Authentication for secure account management and session handling.
+Tasks
+4.1 Firebase Setup
+                                                                                                                                                                                 * Configure Firebase project and environment variables.
+
+                                                                                                                                                                                 * Enable Email/Password and Google sign-in.
+
+4.2 Auth Features
+                                                                                                                                                                                    * Implement signup, login, logout, password reset.
+
+                                                                                                                                                                                    * Email verification and session persistence.
+
+                                                                                                                                                                                    * Create protected route wrapper for authenticated users.
+
+4.3 User Profile Linking
+                                                                                                                                                                                       * Store user info (UID, name, XP, badges) in Firestore.
+
+                                                                                                                                                                                       * Sync XP and tasks with account data.
+
+Expected Deliverables
+✅ Fully functional Firebase Auth integration
+✅ Secure login and signup flows
+✅ Linked user data and XP synchronization
+________________
+
+
+Phase 5: Core Back-End Integration
+Objective
+Implement Firestore database, serverless functions, and core logic for sessions, XP, and leaderboard updates.
+Tasks
+5.1 Firestore Database Schema
+                                                                                                                                                                                          * Collections: users, tasks, sessions, leaderboard, achievements.
+
+                                                                                                                                                                                          * Index optimization and read rules.
+
+                                                                                                                                                                                          * Firestore triggers for XP and streak updates.
+
+5.2 Session & XP Logic
+                                                                                                                                                                                             * Log session time and award XP dynamically.
+
+                                                                                                                                                                                             * Handle streak calculation (daily activity).
+
+                                                                                                                                                                                             * Track weekly performance metrics.
+
+5.3 Task Sync
+                                                                                                                                                                                                * Task data persistence with real-time updates.
+
+                                                                                                                                                                                                * Integrate progress stats into dashboard charts.
+
+Expected Deliverables
+✅ Real-time database and XP logic
+✅ Firestore-backed session and streak system
+✅ Fully functional dashboard backend
+________________
+
+
+Phase 6: Gamification Logic & Rewards
+Objective
+Enhance engagement with reward systems, XP leveling, and in-app store.
+Tasks
+6.1 XP & Badges
+                                                                                                                                                                                                   * Level-up algorithm with progression milestones.
+
+                                                                                                                                                                                                   * Badge awarding for goals, streaks, and time spent.
+
+6.2 Virtual Store
+                                                                                                                                                                                                      * Add in-app currency (coins).
+
+                                                                                                                                                                                                      * Store for avatars, themes, sound packs.
+
+                                                                                                                                                                                                      * Secure Firestore transactions for purchases.
+
+6.3 Planner Integration
+                                                                                                                                                                                                         * Export planner to PDF (via client library).
+
+                                                                                                                                                                                                         * Cloud sync with Firestore (auto-save).
+
+Expected Deliverables
+✅ Fully functional XP/Badge/Leveling system
+✅ Reward store and customization options
+✅ Integrated planner with progress export
+________________
+
+
+Phase 7: Integrations & PWA Setup
+Objective
+Implement monetization, analytics, offline support, and PWA functionality.
+Tasks
+7.1 Monetization
+                                                                                                                                                                                                            * Integrate Google AdSense.
+
+                                                                                                                                                                                                            * Add Stripe/Gumroad for Premium Membership ($5/month).
+
+                                                                                                                                                                                                            * Build payment dashboard and upgrade logic.
+
+7.2 PWA Enhancements
+                                                                                                                                                                                                               * Add web app manifest and service worker.
+
+                                                                                                                                                                                                               * Enable offline Pomodoro sessions and cached planner data.
+
+                                                                                                                                                                                                               * Push notifications for task reminders and XP milestones.
+
+7.3 Analytics & Tracking
+                                                                                                                                                                                                                  * Integrate Google Analytics for user metrics.
+
+                                                                                                                                                                                                                  * Monitor XP distribution, retention rates, and feature usage.
+
+Expected Deliverables
+✅ AdSense + Stripe integration
+✅ Full PWA functionality with offline support
+✅ Analytics and performance tracking
+________________
+
+
+Phase 8: Review, Testing & Optimization
+Objective
+Ensure DapsiGames is stable, secure, optimized, and ready for deployment.
+Tasks
+8.1 Testing & QA
+                                                                                                                                                                                                                     * Test all user journeys (new & returning).
+
+                                                                                                                                                                                                                     * Validate XP calculations and streak logic.
+
+                                                                                                                                                                                                                     * Cross-browser and mobile device testing.
+
+8.2 Security Audit
+                                                                                                                                                                                                                        * Review Firebase Auth and Firestore rules.
+
+                                                                                                                                                                                                                        * Sanitize all user inputs.
+
+                                                                                                                                                                                                                        * Validate HTTPS and CORS configuration.
+
+8.3 Performance Optimization
+                                                                                                                                                                                                                           * Lazy-load non-critical assets.
+
+                                                                                                                                                                                                                           * Optimize bundle size.
+
+                                                                                                                                                                                                                           * Implement code-splitting and caching.
+
+8.4 Final Deployment
+                                                                                                                                                                                                                              * Deploy to Vercel with Firebase backend connection.
+
+                                                                                                                                                                                                                              * Run Lighthouse SEO and performance audits.
+
+                                                                                                                                                                                                                              * Finalize domain: DapsiGames.com
+
+Expected Deliverables
+✅ Fully tested and optimized web app
+✅ Deployed and verified live site
+✅ Documentation and handover to stakeholders
