@@ -19,6 +19,7 @@ import Dashboard from "@/pages/Dashboard";
 import Planner from "@/pages/Planner";
 import Leaderboard from "@/pages/Leaderboard";
 import Rewards from "@/pages/Rewards";
+import Store from "@/pages/Store";
 import Profile from "@/pages/Profile";
 import Activity from "@/pages/Activity";
 import Friends from "@/pages/Friends";
@@ -79,6 +80,11 @@ function Router() {
         <Route path="/rewards">
           <ProtectedRoute>
             <Rewards />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/store">
+          <ProtectedRoute>
+            <Store />
           </ProtectedRoute>
         </Route>
         <Route path="/profile">

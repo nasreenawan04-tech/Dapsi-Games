@@ -1007,3 +1007,62 @@ export const searchUsers = async (searchTerm: string, limitCount: number = 10) =
 
   return results;
 };
+
+// PHASE 6: Store & Rewards System
+export const getUserPurchases = async (userId: string): Promise<string[]> => {
+  const userDoc = await getDoc(doc(db, "users", userId));
+  if (userDoc.exists()) {
+    return userDoc.data().purchases || [];
+  }
+  return [];
+};
+
+export const purchaseItem = async (userId: string, itemId: string, itemPrice: number) => {
+  const userRef = doc(db, "users", userId);
+  const userDoc = await getDoc(userRef);
+
+  if (!userDoc.exists()) {
+    throw new Error("User not found");
+  }
+
+  const userData = userDoc.data();
+  const currentXP = userData.xp || 0;
+  const purchases = userData.purchases || [];
+
+  if (purchases.includes(itemId)) {
+    throw new Error("Item already purchased");
+  }
+
+  if (currentXP < itemPrice) {
+    throw new Error("Insufficient XP");
+  }
+
+  await updateDoc(userRef, {
+    xp: currentXP - itemPrice,
+    purchases: [...purchases, itemId],
+  });
+
+  await addDoc(collection(db, "activities"), {
+    userId,
+    type: "purchase",
+    text: `purchased an item from the store`,
+    xp: -itemPrice,
+    createdAt: Timestamp.now(),
+  });
+
+  return { success: true, newXP: currentXP - itemPrice };
+};
+
+export const applyTheme = async (userId: string, themeId: string) => {
+  const userRef = doc(db, "users", userId);
+  await updateDoc(userRef, {
+    activeTheme: themeId,
+  });
+};
+
+export const applyAvatarBorder = async (userId: string, borderId: string) => {
+  const userRef = doc(db, "users", userId);
+  await updateDoc(userRef, {
+    avatarBorder: borderId,
+  });
+};
