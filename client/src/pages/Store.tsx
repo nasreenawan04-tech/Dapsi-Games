@@ -65,6 +65,7 @@ function StoreContent() {
     }
 
     setPurchasingItem(item.id);
+    
     try {
       await purchaseItem(user.id, item.id, item.price);
       await refreshUser();
@@ -76,17 +77,25 @@ function StoreContent() {
       });
 
       if (item.category === "theme" || item.category === "avatar") {
-        if (item.category === "theme") {
-          await applyTheme(user.id, item.id);
-        } else {
-          await applyAvatarBorder(user.id, item.id);
+        try {
+          if (item.category === "theme") {
+            await applyTheme(user.id, item.id);
+          } else {
+            await applyAvatarBorder(user.id, item.id);
+          }
+          await refreshUser();
+          
+          toast({
+            title: "Auto-Applied",
+            description: `${item.name} has been applied to your profile!`,
+          });
+        } catch (applyError: any) {
+          toast({
+            title: "Application Issue",
+            description: `Item purchased but couldn't auto-apply. You can manually apply it from your profile.`,
+            variant: "default",
+          });
         }
-        await refreshUser();
-        
-        toast({
-          title: "Auto-Applied",
-          description: `${item.name} has been applied to your profile!`,
-        });
       }
     } catch (error: any) {
       toast({
