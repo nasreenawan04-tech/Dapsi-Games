@@ -4,22 +4,29 @@
 DapsiGames is a comprehensive study and productivity application designed to transform studying into an engaging, gamified experience for students. It incentivizes users with XP points, badges, and leaderboard rankings for completing study tasks, maintaining focus, and achieving goals. The project aims to motivate students aged 13-25 by making learning more interactive and rewarding.
 
 ## Recent Changes
-### October 25, 2025 - Phase 5: Core Back-End Integration
-- **Backend API Integration**: Implemented Express.js backend with Firebase Admin SDK for secure server-side operations
-  - Set up Firebase Admin SDK with service account credentials for privileged Firestore access
-  - Created `/api/pomodoro/complete` endpoint to record sessions and award XP
-  - Created `/api/tasks/:taskId/complete` endpoint for task completion with automatic badge checking
-  - Created `/api/leaderboard` endpoint for efficient leaderboard data retrieval
-  - Created `/api/badges/check` endpoint for automated badge unlocking based on achievements
-  - Created `/api/users/:userId/streak` endpoint for daily streak management
-  - Created `/api/users/:userId/stats` endpoint for user statistics
-- **Frontend Integration**: Updated frontend components to use new backend APIs
-  - PomodoroTimer component now uses backend API with automatic badge notifications
-  - Planner component uses backend API for task completion
+### October 25, 2025 - Phase 5: Core Back-End Integration (COMPLETED)
+- **Secure Backend API Integration**: Implemented Express.js backend with Firebase Admin SDK for secure server-side operations
+  - Set up Firebase Admin SDK with service account credentials (FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY)
+  - Created Firebase ID token verification middleware for all protected endpoints
+  - Created `/api/pomodoro/complete` endpoint - server-side XP calculation (25min=50XP, 50min=100XP), session recording, automatic badge checking
+  - Created `/api/tasks/:taskId/complete` endpoint - task ownership validation, XP rewards from task documents, automatic badge notifications
+  - Created `/api/leaderboard` endpoint - efficient global leaderboard retrieval with proper ranking
+  - Created `/api/badges/check` endpoint - automated badge unlocking based on achievements (8 badges: First Focus, Task Master, Streak Star, Master Learner, Social Butterfly, Group Leader, Early Bird, Night Owl)
+  - Created `/api/users/streak` endpoint - daily streak management with same-day inflation prevention via calendar date normalization
+  - Created `/api/users/stats` endpoint - user statistics aggregation (total sessions, tasks completed, badges unlocked)
+- **Frontend Integration**: Updated frontend components to use new backend APIs with proper authentication
+  - All API calls send Firebase ID token in Authorization header for verification
+  - PomodoroTimer component uses backend API with automatic badge unlock notifications
+  - Planner component uses backend API for task completion with XP and badge rewards
   - Leaderboard component uses backend API for global leaderboard data
-  - Created `client/src/lib/api.ts` with helper functions and automatic fallback to direct Firebase calls
-- **Improved Architecture**: Core game logic (XP calculations, badge unlocking) now handled server-side for security and consistency
-- **Enhanced User Experience**: Automatic badge unlock notifications when completing sessions or tasks
+  - Created `client/src/lib/api.ts` with helper functions and automatic fallback to direct Firebase calls for resilience
+- **Security & Integrity**:
+  - All XP calculations happen server-side - clients cannot manipulate XP values
+  - Task completion validates ownership before awarding XP - prevents cross-user manipulation
+  - Streak endpoint prevents same-day inflation - only one increment per calendar day
+  - Firebase ID tokens verified on every protected route - unauthorized requests rejected with 401
+  - UserId derived from verified token, never trusted from request body
+- **Enhanced User Experience**: Automatic badge unlock notifications with toast messages when completing sessions or tasks
 
 ### October 25, 2025 - Phase 4: Email Verification Implementation
 - **Added Email Verification**: Implemented Firebase email verification to secure user accounts
