@@ -1,10 +1,10 @@
-import { Palette, User, Sparkles, Crown, Zap, Heart, Star, Trophy } from "lucide-react";
+import { Palette, User, Sparkles, Crown, Zap, Heart, Star, Trophy, Music, Volume2, Waves, Wind } from "lucide-react";
 
 export interface StoreItem {
   id: string;
   name: string;
   description: string;
-  category: "theme" | "avatar" | "badge" | "boost";
+  category: "theme" | "avatar" | "badge" | "boost" | "sound";
   price: number;
   icon: any;
   color: string;
@@ -153,11 +153,80 @@ export const STORE_ITEMS: StoreItem[] = [
     bgColor: "bg-red-500/10",
     effect: "One-time streak protection"
   },
+  
+  // Sound Packs
+  {
+    id: "sound_rain",
+    name: "Rainfall Ambience",
+    description: "Gentle rain sounds to help you focus and relax",
+    category: "sound",
+    price: 300,
+    icon: Waves,
+    color: "text-blue-400",
+    bgColor: "bg-blue-400/10",
+    effect: "Soothing rain sounds during study sessions"
+  },
+  {
+    id: "sound_coffee",
+    name: "Coffee Shop",
+    description: "Cozy coffee shop chatter and ambient noise",
+    category: "sound",
+    price: 300,
+    icon: Music,
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    effect: "Cafe atmosphere background audio"
+  },
+  {
+    id: "sound_nature",
+    name: "Forest Sounds",
+    description: "Birds chirping and rustling leaves for natural focus",
+    category: "sound",
+    price: 350,
+    icon: Wind,
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+    effect: "Nature-inspired ambient sounds"
+  },
+  {
+    id: "sound_lofi",
+    name: "Lo-fi Beats",
+    description: "Chill lo-fi hip hop beats to study to",
+    category: "sound",
+    price: 400,
+    icon: Music,
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    effect: "Relaxing instrumental background music"
+  },
+  {
+    id: "sound_white_noise",
+    name: "White Noise",
+    description: "Pure white noise for maximum concentration",
+    category: "sound",
+    price: 250,
+    icon: Volume2,
+    color: "text-gray-400",
+    bgColor: "bg-gray-400/10",
+    effect: "Continuous white noise for focus"
+  },
+  {
+    id: "sound_ocean",
+    name: "Ocean Waves",
+    description: "Calming ocean waves for peaceful studying",
+    category: "sound",
+    price: 350,
+    icon: Waves,
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-500/10",
+    effect: "Relaxing ocean wave sounds"
+  },
 ];
 
 export const CATEGORY_LABELS = {
   theme: "Themes",
   avatar: "Avatar Customization",
   badge: "Special Badges",
-  boost: "XP Boosts"
+  boost: "XP Boosts",
+  sound: "Sound Packs"
 };

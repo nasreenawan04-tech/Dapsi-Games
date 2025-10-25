@@ -155,10 +155,11 @@ function StoreContent() {
       </div>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-8">
+        <TabsList className="grid w-full grid-cols-6 mb-8">
           <TabsTrigger value="all" data-testid="tab-all">All Items</TabsTrigger>
           <TabsTrigger value="theme" data-testid="tab-theme">Themes</TabsTrigger>
           <TabsTrigger value="avatar" data-testid="tab-avatar">Avatars</TabsTrigger>
+          <TabsTrigger value="sound" data-testid="tab-sound">Sounds</TabsTrigger>
           <TabsTrigger value="badge" data-testid="tab-badge">Badges</TabsTrigger>
           <TabsTrigger value="boost" data-testid="tab-boost">Boosts</TabsTrigger>
         </TabsList>

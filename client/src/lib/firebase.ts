@@ -96,6 +96,7 @@ export const updateUserXP = async (userId: string, xpToAdd: number) => {
 
   if (userDoc.exists()) {
     const currentXP = userDoc.data().xp || 0;
+    const oldLevel = userDoc.data().level || "Novice";
     const newXP = currentXP + xpToAdd;
 
     // Determine level based on XP
@@ -103,12 +104,14 @@ export const updateUserXP = async (userId: string, xpToAdd: number) => {
     if (newXP >= 2000) level = "Master";
     else if (newXP >= 500) level = "Scholar";
 
+    const leveledUp = level !== oldLevel;
+
     await updateDoc(userRef, {
       xp: newXP,
       level: level,
     });
 
-    return { xp: newXP, level };
+    return { xp: newXP, level, leveledUp, oldLevel };
   }
 
   return null;

@@ -72,12 +72,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (userDoc.exists) {
         const currentXP = userDoc.data()?.xp || 0;
+        const oldLevel = userDoc.data()?.level || "Novice";
         const newXP = currentXP + xpEarned;
 
         // Determine level based on XP
         let level = "Novice";
         if (newXP >= 2000) level = "Master";
         else if (newXP >= 500) level = "Scholar";
+
+        const leveledUp = level !== oldLevel;
 
         await userRef.update({
           xp: newXP,
@@ -91,6 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true, 
           xp: newXP, 
           level,
+          leveledUp,
           xpEarned,
           unlockedBadges 
         });
@@ -143,11 +147,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (userDoc.exists) {
         const currentXP = userDoc.data()?.xp || 0;
+        const oldLevel = userDoc.data()?.level || "Novice";
         const newXP = currentXP + xpReward;
 
         let level = "Novice";
         if (newXP >= 2000) level = "Master";
         else if (newXP >= 500) level = "Scholar";
+
+        const leveledUp = level !== oldLevel;
 
         await userRef.update({
           xp: newXP,
@@ -162,6 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           xpReward, 
           xp: newXP, 
           level,
+          leveledUp,
           unlockedBadges 
         });
       }

@@ -5,6 +5,7 @@ import { Play, Pause, RotateCcw, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { recordPomodoroSessionViaAPI } from "@/lib/api";
+import { LevelUpModal } from "@/components/LevelUpModal";
 
 interface PomodoroTimerProps {
   onComplete?: (duration: number, xpEarned: number) => void;
@@ -14,6 +15,8 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
   const [duration, setDuration] = useState(25);
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpData, setLevelUpData] = useState({ newLevel: "", currentXP: 0 });
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { user, refreshUser } = useAuth();
@@ -56,13 +59,20 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
           description: `Great job! You earned ${xpEarned} XP!`,
         });
 
+        if (result.leveledUp) {
+          setTimeout(() => {
+            setLevelUpData({ newLevel: result.level, currentXP: result.xp });
+            setShowLevelUpModal(true);
+          }, 500);
+        }
+
         if (result.unlockedBadges && result.unlockedBadges.length > 0) {
           setTimeout(() => {
             toast({
               title: "🏆 New Badge Unlocked!",
               description: `You've earned ${result.unlockedBadges.length} new badge${result.unlockedBadges.length > 1 ? 's' : ''}!`,
             });
-          }, 1000);
+          }, result.leveledUp ? 3000 : 1000);
         }
 
         if (onComplete) {
@@ -102,13 +112,21 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
   const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
 
   return (
-    <Card className="hover-elevate">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-primary" />
-          Pomodoro Timer
-        </CardTitle>
-      </CardHeader>
+    <>
+      <LevelUpModal
+        isOpen={showLevelUpModal}
+        onClose={() => setShowLevelUpModal(false)}
+        newLevel={levelUpData.newLevel}
+        currentXP={levelUpData.currentXP}
+      />
+      
+      <Card className="hover-elevate">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            Pomodoro Timer
+          </CardTitle>
+        </CardHeader>
       <CardContent className="space-y-6">
         {/* Circular Timer Display */}
         <div className="relative w-48 h-48 mx-auto">
@@ -213,5 +231,6 @@ export function PomodoroTimer({ onComplete }: PomodoroTimerProps) {
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }
