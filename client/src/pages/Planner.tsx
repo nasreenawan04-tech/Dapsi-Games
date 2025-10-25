@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createTask, getUserTasks, updateTask, deleteTask as deleteTaskFromDB } from "@/lib/firebase";
 import { completeTaskViaAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { LevelUpModal } from "@/components/LevelUpModal";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -27,6 +28,8 @@ function PlannerContent() {
   const { user, refreshUser } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpData, setLevelUpData] = useState({ newLevel: "", currentXP: 0 });
   const { toast } = useToast();
 
   const [newTask, setNewTask] = useState({
@@ -75,13 +78,20 @@ function PlannerContent() {
           description: `You earned ${result.xpReward} XP!`,
         });
 
+        if (result.leveledUp) {
+          setTimeout(() => {
+            setLevelUpData({ newLevel: result.level, currentXP: result.xp });
+            setShowLevelUpModal(true);
+          }, 500);
+        }
+
         if (result.unlockedBadges && result.unlockedBadges.length > 0) {
           setTimeout(() => {
             toast({
               title: "🏆 New Badge Unlocked!",
               description: `You've earned ${result.unlockedBadges.length} new badge${result.unlockedBadges.length > 1 ? 's' : ''}!`,
             });
-          }, 1000);
+          }, result.leveledUp ? 3000 : 1000);
         }
       } else {
         await updateTask(taskId, { completed: false });
@@ -212,8 +222,16 @@ function PlannerContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+    <>
+      <LevelUpModal
+        isOpen={showLevelUpModal}
+        onClose={() => setShowLevelUpModal(false)}
+        newLevel={levelUpData.newLevel}
+        currentXP={levelUpData.currentXP}
+      />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">Study Planner</h1>
           <p className="text-muted-foreground">
@@ -238,65 +256,65 @@ function PlannerContent() {
                 Add Task
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Task Title</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Complete Math Homework"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  data-testid="input-task-title"
-                />
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Task Title</Label>
+                  <Input
+                    id="title"
+                    placeholder="e.g., Complete Math Homework"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    data-testid="input-task-title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Select value={newTask.subject} onValueChange={(value) => setNewTask({ ...newTask, subject: value })}>
+                    <SelectTrigger data-testid="select-subject">
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                    data-testid="input-due-date"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="xpReward">XP Reward</Label>
+                  <Input
+                    id="xpReward"
+                    type="number"
+                    min="1"
+                    value={newTask.xpReward}
+                    onChange={(e) => setNewTask({ ...newTask, xpReward: parseInt(e.target.value) || 10 })}
+                    data-testid="input-xp-reward"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="subject">Subject</Label>
-                <Select value={newTask.subject} onValueChange={(value) => setNewTask({ ...newTask, subject: value })}>
-                  <SelectTrigger data-testid="select-subject">
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject} value={subject}>
-                        {subject}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                  data-testid="input-due-date"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="xpReward">XP Reward</Label>
-                <Input
-                  id="xpReward"
-                  type="number"
-                  min="1"
-                  value={newTask.xpReward}
-                  onChange={(e) => setNewTask({ ...newTask, xpReward: parseInt(e.target.value) || 10 })}
-                  data-testid="input-xp-reward"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={addTask} data-testid="button-save-task">
-                Create Task
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button onClick={addTask} data-testid="button-save-task">
+                  Create Task
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -436,6 +454,7 @@ function PlannerContent() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   );
 }
