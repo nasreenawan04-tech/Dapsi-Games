@@ -220,6 +220,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's unlocked badges
+  app.get("/api/badges", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userId!; // From verified token
+
+      const userBadgesSnapshot = await db.collection('userBadges')
+        .where('userId', '==', userId)
+        .get();
+
+      const badges = userBadgesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      return res.json(badges);
+    } catch (error: any) {
+      console.error("Error fetching user badges:", error);
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   // Check and unlock badges for a user
   app.post("/api/badges/check", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -242,8 +263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate input
       const updateSchema = z.object({
-        name: z.string().min(2, "Name must be at least 2 characters").optional(),
-        email: z.string().email("Invalid email address").optional(),
+        name: z.string().min(2, "Name must be at least 2 characters").trim().optional(),
+        email: z.string().email("Invalid email address").trim().optional(),
       });
 
       const validatedData = updateSchema.parse({ name, email });
@@ -260,6 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updateData: any = {};
+      let authEmailUpdated = false;
       
       if (validatedData.name) {
         updateData.name = validatedData.name;
@@ -272,33 +294,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .get();
         
         if (!emailQuery.empty && emailQuery.docs[0].id !== userId) {
-          return res.status(400).json({ error: "Email already in use" });
+          return res.status(400).json({ error: "Email is already in use by another account" });
         }
 
-        updateData.email = validatedData.email;
-
-        // Update Firebase Auth email
+        // Update Firebase Auth email first
         try {
           await adminAuth.updateUser(userId, {
             email: validatedData.email,
           });
+          authEmailUpdated = true;
+          updateData.email = validatedData.email;
         } catch (error: any) {
           console.error("Error updating Firebase Auth email:", error);
-          return res.status(500).json({ error: "Failed to update email in authentication system" });
+          const errorMessage = error.code === 'auth/email-already-exists' 
+            ? "Email is already in use by another account" 
+            : "Failed to update email. Please try again later.";
+          return res.status(400).json({ error: errorMessage });
         }
       }
 
+      // Update Firestore
       await userRef.update(updateData);
 
+      // Get updated user data
       const updatedUser = await userRef.get();
       const userData = updatedUser.data();
+
+      // Get current auth email to ensure consistency
+      const authUser = await adminAuth.getUser(userId);
 
       return res.json({
         success: true,
         user: {
           id: userId,
           name: userData?.name,
-          email: userData?.email,
+          email: authUser.email,
           xp: userData?.xp,
           level: userData?.level,
           streak: userData?.streak,
@@ -400,6 +430,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error fetching user stats:", error);
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Get recent activities (pomodoro sessions and completed tasks)
+  app.get("/api/users/activities", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userId!; // From verified token
+      const limitParam = req.query.limit as string;
+      const limit = limitParam ? parseInt(limitParam, 10) : 10;
+
+      if (limit < 1 || limit > 50) {
+        return res.status(400).json({ error: "Limit must be between 1 and 50" });
+      }
+
+      // Fetch pomodoro sessions
+      const pomodoroSnapshot = await db.collection('pomodoroSessions')
+        .where('userId', '==', userId)
+        .orderBy('completedAt', 'desc')
+        .limit(limit)
+        .get();
+
+      // Fetch completed tasks
+      const tasksSnapshot = await db.collection('tasks')
+        .where('userId', '==', userId)
+        .where('completed', '==', true)
+        .orderBy('completedAt', 'desc')
+        .limit(limit)
+        .get();
+
+      const activities: any[] = [];
+
+      // Add pomodoro sessions
+      pomodoroSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        activities.push({
+          type: 'session',
+          text: `Completed ${data.duration}-min focus session`,
+          xp: data.xpEarned,
+          timestamp: data.completedAt.toDate(),
+        });
+      });
+
+      // Add completed tasks
+      tasksSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const completedDate = data.completedAt ? data.completedAt.toDate() : data.createdAt?.toDate();
+        if (completedDate) {
+          activities.push({
+            type: 'task',
+            text: `Finished ${data.title}`,
+            xp: data.xpReward,
+            timestamp: completedDate,
+          });
+        }
+      });
+
+      // Sort by timestamp and limit
+      activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      const limitedActivities = activities.slice(0, limit);
+
+      // Format time ago
+      const now = new Date();
+      const formattedActivities = limitedActivities.map(activity => {
+        const diff = now.getTime() - activity.timestamp.getTime();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        let timeAgo;
+        if (days > 0) {
+          timeAgo = days === 1 ? "1 day ago" : `${days} days ago`;
+        } else if (hours > 0) {
+          timeAgo = hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+        } else {
+          timeAgo = "Just now";
+        }
+
+        return {
+          type: activity.type,
+          text: activity.text,
+          xp: activity.xp,
+          time: timeAgo,
+        };
+      });
+
+      return res.json(formattedActivities);
+    } catch (error: any) {
+      console.error("Error fetching user activities:", error);
       return res.status(500).json({ error: error.message || "Internal server error" });
     }
   });
