@@ -51,6 +51,11 @@ The application is built with a modern web stack, emphasizing a gamified user ex
 - **Real-time Data**: Leverages Firebase for dynamic updates across the application.
 - **Modular Component Architecture**: Organized project structure with reusable components.
 - **Secure Server-Side Operations**: Critical game logic (XP, badges) executed on the backend to prevent client-side manipulation.
+- **Build Optimization**: Vite build configuration optimized for low-memory environments:
+  - Single vendor chunk instead of granular code splitting to reduce memory usage
+  - esbuild minification (faster and more memory-efficient than Terser)
+  - Simplified PWA workbox configuration
+  - Source maps disabled in production
 
 ## External Dependencies
 - **Firebase**:
