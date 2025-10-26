@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, UserPlus, UserMinus, UserCheck, UserX, Search, Trophy, MessageSquare } from "lucide-react";
+import { Users, UserPlus, UserMinus, UserCheck, UserX, Search, Trophy, MessageSquare, Sparkles } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,10 @@ import {
   rejectFriendRequest,
   removeFriend,
   searchUsers,
-  subscribeToConversations
+  subscribeToConversations,
+  getSuggestedFriends,
+  updateOnlineStatus,
+  subscribeToUserStatus
 } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,28 +37,58 @@ function FriendsContent() {
   const [friends, setFriends] = useState<any[]>([]);
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
   const [conversations, setConversations] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [chatFriend, setChatFriend] = useState<any>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [onlineStatuses, setOnlineStatuses] = useState<{ [key: string]: boolean }>({});
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
+      updateOnlineStatus(user.id, true);
       loadFriends();
       loadFriendRequests();
+      loadSuggestions();
       
       const unsubscribe = subscribeToConversations(user.id, (updatedConversations) => {
         setConversations(updatedConversations);
       });
 
+      const handleBeforeUnload = () => {
+        updateOnlineStatus(user.id, false);
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
       return () => {
+        updateOnlineStatus(user.id, false);
         unsubscribe();
+        window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
   }, [user]);
+
+  useEffect(() => {
+    const unsubscribes: (() => void)[] = [];
+
+    friends.forEach((friend) => {
+      const unsubscribe = subscribeToUserStatus(friend.id, (status) => {
+        setOnlineStatuses(prev => ({
+          ...prev,
+          [friend.id]: status.isOnline
+        }));
+      });
+      unsubscribes.push(unsubscribe);
+    });
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [friends]);
 
   const loadFriends = async () => {
     if (!user) return;
@@ -76,6 +109,16 @@ function FriendsContent() {
       setFriendRequests(data);
     } catch (error) {
       console.error("Failed to load friend requests:", error);
+    }
+  };
+
+  const loadSuggestions = async () => {
+    if (!user) return;
+    try {
+      const data = await getSuggestedFriends(user.id, user.xp || 0);
+      setSuggestions(data);
+    } catch (error) {
+      console.error("Failed to load suggestions:", error);
     }
   };
 
@@ -184,7 +227,7 @@ function FriendsContent() {
       </div>
 
       <Tabs defaultValue="my-friends" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="my-friends" data-testid="tab-my-friends">
             My Friends
             {friends.length > 0 && (
@@ -198,6 +241,10 @@ function FriendsContent() {
                 {conversations.reduce((acc, conv) => acc + conv.unreadCount, 0)}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="suggestions" data-testid="tab-suggestions">
+            <Sparkles className="h-4 w-4 mr-1" />
+            Suggestions
           </TabsTrigger>
           <TabsTrigger value="requests" data-testid="tab-requests">
             Requests
@@ -222,16 +269,31 @@ function FriendsContent() {
           ) : (
             <div className="grid gap-4">
               {friends.map((friend) => (
-                <Card key={friend.id} className="hover-elevate">
+                <Card key={friend.id} className="hover-elevate transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback className="text-lg">
-                          {friend.name?.[0]}{friend.name?.split(" ")[1]?.[0] || ""}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-12 w-12 border-2 border-primary/20">
+                          <AvatarFallback className="text-lg bg-gradient-to-br from-primary/20 to-primary/10">
+                            {friend.name?.[0]}{friend.name?.split(" ")[1]?.[0] || ""}
+                          </AvatarFallback>
+                        </Avatar>
+                        {onlineStatuses[friend.id] && (
+                          <div 
+                            className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 border-2 border-white rounded-full animate-pulse"
+                            title="Online"
+                          />
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg">{friend.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{friend.name}</h3>
+                          {onlineStatuses[friend.id] && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              Online
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground">{friend.email}</p>
                         <div className="flex items-center gap-4 mt-1">
                           <span className="text-sm font-medium text-primary flex items-center gap-1">
@@ -249,13 +311,14 @@ function FriendsContent() {
                             setChatFriend(friend);
                             setChatOpen(true);
                           }}
+                          className="bg-gradient-to-r from-primary to-primary/80"
                           data-testid={`button-message-friend-${friend.id}`}
                         >
                           <MessageSquare className="h-4 w-4 mr-2" />
                           Message
                         </Button>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleRemoveFriend(friend.id, friend.name)}
                           data-testid={`button-remove-friend-${friend.id}`}
@@ -322,6 +385,79 @@ function FriendsContent() {
                           <Badge variant="outline">{conversation.otherUser.level || "Novice"}</Badge>
                         </div>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="suggestions" className="space-y-4">
+          <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Friend Suggestions</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Students with similar XP levels who might be great study partners!
+              </p>
+            </CardContent>
+          </Card>
+
+          {suggestions.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Sparkles className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No suggestions available</h3>
+                <p className="text-muted-foreground">
+                  Keep earning XP and we'll find students at your level!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {suggestions.map((suggestion: any) => (
+                <Card key={suggestion.id} className="hover-elevate transition-all border-primary/10">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12 border-2 border-primary/30">
+                        <AvatarFallback className="text-lg bg-gradient-to-br from-primary/30 to-primary/20">
+                          {suggestion.name?.[0]}{suggestion.name?.split(" ")[1]?.[0] || ""}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{suggestion.name}</h3>
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                            Suggested
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{suggestion.email}</p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-sm font-medium text-primary flex items-center gap-1">
+                            <Trophy className="h-4 w-4" />
+                            {suggestion.xp?.toLocaleString() || 0} XP
+                          </span>
+                          <Badge variant="outline">{suggestion.level || "Novice"}</Badge>
+                          {user && Math.abs((suggestion.xp || 0) - (user.xp || 0)) < 100 && (
+                            <Badge variant="secondary" className="text-xs">Similar Level</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          handleSendRequest(suggestion.id, suggestion.name);
+                          setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+                        }}
+                        className="bg-gradient-to-r from-primary to-primary/80"
+                        data-testid={`button-add-suggestion-${suggestion.id}`}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add Friend
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
