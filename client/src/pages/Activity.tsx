@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, limit, onSnapshot, doc, getDoc } from "firebase/firestore";
+import { SEO } from "@/components/SEO";
 
 export default function Activity() {
   return (
@@ -76,6 +77,11 @@ function ActivityContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO
+        title="Activity Feed"
+        description="See what other students are accomplishing and get motivated by their progress."
+        noindex={true}
+      />
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
           <ActivityIcon className="h-8 w-8 text-primary" />

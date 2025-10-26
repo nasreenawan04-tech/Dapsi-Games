@@ -2,10 +2,16 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertCircle, Home } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4">
+      <SEO
+        title="404 - Page Not Found"
+        description="The page you're looking for doesn't exist or has been moved."
+        noindex={true}
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">

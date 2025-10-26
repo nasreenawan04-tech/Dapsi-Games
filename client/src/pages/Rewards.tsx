@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { getUserBadges, checkAndUnlockBadges } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { SEO } from "@/components/SEO";
 
 export default function Rewards() {
   return (
@@ -153,6 +154,11 @@ function RewardsContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO
+        title="Badges & Rewards"
+        description="View your earned badges and unlock new achievements as you progress."
+        noindex={true}
+      />
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
           <Award className="h-8 w-8 text-primary" />

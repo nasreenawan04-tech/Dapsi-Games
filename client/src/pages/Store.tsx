@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { STORE_ITEMS, CATEGORY_LABELS, StoreItem } from "@/lib/store-items";
 import { getUserPurchases, purchaseItem, applyTheme, applyAvatarBorder } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { SEO } from "@/components/SEO";
 
 export default function Store() {
   return (
@@ -126,6 +127,11 @@ function StoreContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO
+        title="XP Store"
+        description="Spend your XP on exclusive themes, avatar customizations, and special boosts."
+        noindex={true}
+      />
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <ShoppingBag className="h-8 w-8 text-primary" />

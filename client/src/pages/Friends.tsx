@@ -23,6 +23,7 @@ import {
   subscribeToUserStatus
 } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { SEO } from "@/components/SEO";
 
 export default function Friends() {
   return (
@@ -216,6 +217,11 @@ function FriendsContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <SEO
+        title="Friends"
+        description="Connect with study partners, send messages, and compete with friends."
+        noindex={true}
+      />
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
           <Users className="h-8 w-8 text-primary" />

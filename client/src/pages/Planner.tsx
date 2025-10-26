@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { LevelUpModal } from "@/components/LevelUpModal";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { SEO } from "@/components/SEO";
 
 interface Task {
   id: string;
@@ -383,6 +384,11 @@ function PlannerContent() {
 
   return (
     <>
+      <SEO
+        title="Study Planner"
+        description="Organize your study tasks, set deadlines, and earn XP rewards for completing assignments."
+        noindex={true}
+      />
       <LevelUpModal
         isOpen={showLevelUpModal}
         onClose={() => setShowLevelUpModal(false)}

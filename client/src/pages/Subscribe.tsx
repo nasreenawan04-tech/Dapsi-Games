@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn('Stripe public key not configured');
@@ -133,6 +134,11 @@ export default function Subscribe() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
+      <SEO
+        title="Subscribe to Premium"
+        description="Upgrade to Premium for exclusive features, advanced analytics, and ad-free experience."
+        noindex={true}
+      />
       <div className="max-w-4xl w-full grid md:grid-cols-2 gap-6">
         <Card className="flex flex-col">
           <CardHeader>
