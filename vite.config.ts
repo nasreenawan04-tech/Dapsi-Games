@@ -127,15 +127,60 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV !== 'production',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor': ['react', 'react-dom', 'wouter'],
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'ui': ['lucide-react', 'framer-motion'],
-          'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+        manualChunks(id) {
+          // Core React libraries
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          
+          // Firebase libraries
+          if (id.includes('firebase') || id.includes('@firebase')) {
+            return 'firebase';
+          }
+          
+          // Radix UI components (large UI library)
+          if (id.includes('@radix-ui')) {
+            return 'radix-ui';
+          }
+          
+          // Form libraries
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+            return 'forms';
+          }
+          
+          // Chart/visualization libraries
+          if (id.includes('recharts') || id.includes('d3-')) {
+            return 'charts';
+          }
+          
+          // Stripe
+          if (id.includes('@stripe') || id.includes('stripe')) {
+            return 'stripe';
+          }
+          
+          // Icons and animations
+          if (id.includes('lucide-react') || id.includes('react-icons') || id.includes('framer-motion')) {
+            return 'ui-icons';
+          }
+          
+          // TanStack Query
+          if (id.includes('@tanstack')) {
+            return 'tanstack';
+          }
+          
+          // PDF generation
+          if (id.includes('jspdf')) {
+            return 'jspdf';
+          }
+          
+          // Other large vendor libraries
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
       },
     },
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 2000,
     minify: 'terser',
     terserOptions: {
       compress: {
