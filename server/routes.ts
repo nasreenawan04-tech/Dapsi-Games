@@ -234,6 +234,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile (name and email)
+  app.patch("/api/users/profile", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userId!; // From verified token
+      const { name, email } = req.body;
+
+      // Validate input
+      const updateSchema = z.object({
+        name: z.string().min(2, "Name must be at least 2 characters").optional(),
+        email: z.string().email("Invalid email address").optional(),
+      });
+
+      const validatedData = updateSchema.parse({ name, email });
+
+      if (!validatedData.name && !validatedData.email) {
+        return res.status(400).json({ error: "No fields to update" });
+      }
+
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const updateData: any = {};
+      
+      if (validatedData.name) {
+        updateData.name = validatedData.name;
+      }
+
+      if (validatedData.email) {
+        // Check if email is already in use by another user
+        const emailQuery = await db.collection('users')
+          .where('email', '==', validatedData.email)
+          .get();
+        
+        if (!emailQuery.empty && emailQuery.docs[0].id !== userId) {
+          return res.status(400).json({ error: "Email already in use" });
+        }
+
+        updateData.email = validatedData.email;
+
+        // Update Firebase Auth email
+        try {
+          await adminAuth.updateUser(userId, {
+            email: validatedData.email,
+          });
+        } catch (error: any) {
+          console.error("Error updating Firebase Auth email:", error);
+          return res.status(500).json({ error: "Failed to update email in authentication system" });
+        }
+      }
+
+      await userRef.update(updateData);
+
+      const updatedUser = await userRef.get();
+      const userData = updatedUser.data();
+
+      return res.json({
+        success: true,
+        user: {
+          id: userId,
+          name: userData?.name,
+          email: userData?.email,
+          xp: userData?.xp,
+          level: userData?.level,
+          streak: userData?.streak,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error updating user profile:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors[0].message });
+      }
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   // Update user streak
   app.post("/api/users/streak", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
     try {
