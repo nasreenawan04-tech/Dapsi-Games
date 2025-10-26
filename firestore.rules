@@ -231,21 +231,50 @@ service cloud.firestore {
                      isOwner(resource.data.toUserId));
       
       // Allow create if authenticated, email verified, and you're the sender
+      // Required fields: conversationId, fromUserId, toUserId, text, read, createdAt, type
+      // Optional fields: imageUrl (for image messages)
       allow create: if isAuthenticated() && 
                       isEmailVerified() &&
                       isOwner(request.resource.data.fromUserId) &&
                       request.resource.data.fromUserId != request.resource.data.toUserId &&
-                      request.resource.data.keys().hasAll(['conversationId', 'fromUserId', 'toUserId', 'text', 'read', 'createdAt']) &&
-                      request.resource.data.read == false;
+                      request.resource.data.keys().hasAll(['conversationId', 'fromUserId', 'toUserId', 'text', 'read', 'createdAt', 'type']) &&
+                      request.resource.data.read == false &&
+                      (request.resource.data.type == 'text' || request.resource.data.type == 'image') &&
+                      // If type is 'image', imageUrl must be present
+                      (request.resource.data.type == 'text' || 
+                       (request.resource.data.type == 'image' && request.resource.data.keys().hasAny(['imageUrl'])));
       
-      // Allow update only to mark as read by the receiver
+      // Allow update for multiple scenarios:
+      // 1. Mark as read (receiver only)
+      // 2. Add/remove reactions (any participant)
+      // 3. Edit message text (sender only)
+      // 4. Soft delete message (sender only)
       allow update: if isAuthenticated() && 
                       isEmailVerified() &&
-                      isOwner(resource.data.toUserId) &&
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
-                      request.resource.data.read == true;
+                      (
+                        // Scenario 1: Mark message as read (receiver only)
+                        (isOwner(resource.data.toUserId) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+                         request.resource.data.read == true) ||
+                        
+                        // Scenario 2: Add/remove reactions (any participant who can read)
+                        ((isOwner(resource.data.fromUserId) || isOwner(resource.data.toUserId)) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])) ||
+                        
+                        // Scenario 3: Edit message text (sender only, adds edited flag and timestamp)
+                        (isOwner(resource.data.fromUserId) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'edited', 'editedAt']) &&
+                         request.resource.data.edited == true &&
+                         request.resource.data.keys().hasAll(['editedAt'])) ||
+                        
+                        // Scenario 4: Soft delete message (sender only, marks as deleted and changes text)
+                        (isOwner(resource.data.fromUserId) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted', 'text']) &&
+                         request.resource.data.deleted == true &&
+                         request.resource.data.text == "This message was deleted")
+                      );
       
-      // No deletion from client
+      // No hard deletion from client
       allow delete: if false;
     }
     
@@ -270,6 +299,18 @@ service cloud.firestore {
       
       // No deletion from client
       allow delete: if false;
+    }
+    
+    // Typing status collection (for real-time typing indicators)
+    match /typing/{conversationId} {
+      // Allow read if authenticated (to see when someone is typing)
+      allow read: if isAuthenticated();
+      
+      // Allow create/update to set your own typing status
+      allow create, update: if isAuthenticated() && isEmailVerified();
+      
+      // Allow delete to clear typing status
+      allow delete: if isAuthenticated() && isEmailVerified();
     }
   }
 }
