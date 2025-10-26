@@ -1,19 +1,30 @@
+# Dependencies
 node_modules
+
+# Git
 .git
+
+# Environment files (secrets should be in Vercel dashboard)
 .env
 .env.local
+
+# Replit specific
 .replit
 .config
 .upm
 .cache
+
+# Logs
 *.log
 firebase-debug.log
+
+# Editor
 .DS_Store
 .vscode
 .idea
-attached_assets
+
+# Temporary files
 tmp
-client/src
-server/vite.ts
-vite.config.ts
-tsconfig.json
+
+# Attached assets (if not needed in production)
+attached_assets
