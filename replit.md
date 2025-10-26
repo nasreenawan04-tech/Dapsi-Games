@@ -31,6 +31,7 @@ The application is built with a modern web stack, emphasizing a gamified user ex
 - **Badges & Rewards System**: Tracks and automatically unlocks 8 distinct badges based on user milestones with real-time notifications and level-up celebrations.
 - **User Profile**: Manages account info, XP history, stats, theme customization, and unlocked badges.
 - **Friend System**: Supports user search, friend requests, and friend lists including a friend-specific leaderboard.
+- **Messaging System**: Real-time one-on-one messaging between friends with unread message indicators, conversation history, and auto-scrolling chat interface.
 - **Study Groups**: Facilitates creation, joining, and management of study groups with group leaderboards.
 - **Activity Feed**: Real-time global feed of user study activities.
 - **Virtual Store**: Includes purchasable items like sound packs (e.g., Rainfall Ambience, Lo-fi Beats) using XP.
