@@ -146,11 +146,11 @@ function Navigation() {
     { href: "/leaderboard", icon: Trophy, label: "Leaderboard" },
     { href: "/rewards", icon: Award, label: "Rewards" },
     { href: "/store", icon: ShoppingBag, label: "Store" },
+    { href: "/friends", icon: Users, label: "Friends" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
   const moreNavItems = [
-    { href: "/friends", icon: Users, label: "Friends" },
     { href: "/groups", icon: Users2, label: "Groups" },
     { href: "/activity", icon: Activity, label: "Activity" },
   ];
