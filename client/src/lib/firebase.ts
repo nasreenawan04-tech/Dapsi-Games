@@ -136,15 +136,22 @@ export const createTask = async (userId: string, task: any) => {
 export const getUserTasks = async (userId: string) => {
   const q = query(
     collection(db, "tasks"),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
+    where("userId", "==", userId)
   );
 
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
+  const tasks = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data(),
   }));
+  
+  tasks.sort((a: any, b: any) => {
+    const aTime = a.createdAt?.toMillis?.() || 0;
+    const bTime = b.createdAt?.toMillis?.() || 0;
+    return bTime - aTime;
+  });
+  
+  return tasks;
 };
 
 export const updateTask = async (taskId: string, updates: any) => {
@@ -263,8 +270,7 @@ export const getWeeklyStats = async (userId: string) => {
   const pomodoroQuery = query(
     collection(db, "pomodoroSessions"),
     where("userId", "==", userId),
-    where("completedAt", ">=", Timestamp.fromDate(sevenDaysAgo)),
-    orderBy("completedAt", "asc")
+    where("completedAt", ">=", Timestamp.fromDate(sevenDaysAgo))
   );
 
   const tasksSnapshot = await getDocs(
@@ -276,6 +282,13 @@ export const getWeeklyStats = async (userId: string) => {
   );
 
   const pomodoroSnapshot = await getDocs(pomodoroQuery);
+  
+  const pomodoroData = pomodoroSnapshot.docs.map(doc => doc.data());
+  pomodoroData.sort((a: any, b: any) => {
+    const aTime = a.completedAt?.toMillis?.() || 0;
+    const bTime = b.completedAt?.toMillis?.() || 0;
+    return aTime - bTime;
+  });
 
   const dailyStats = new Map();
 
@@ -291,8 +304,7 @@ export const getWeeklyStats = async (userId: string) => {
     });
   }
 
-  pomodoroSnapshot.docs.forEach(doc => {
-    const data = doc.data();
+  pomodoroData.forEach(data => {
     const date = data.completedAt.toDate();
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const stats = dailyStats.get(dateStr);
@@ -368,9 +380,7 @@ export const getTodayStats = async (userId: string) => {
 export const getRecentActivities = async (userId: string, limitCount: number = 10) => {
   const pomodoroQuery = query(
     collection(db, "pomodoroSessions"),
-    where("userId", "==", userId),
-    orderBy("completedAt", "desc"),
-    limit(limitCount)
+    where("userId", "==", userId)
   );
 
   const tasksSnapshot = await getDocs(
@@ -382,11 +392,19 @@ export const getRecentActivities = async (userId: string, limitCount: number = 1
   );
 
   const pomodoroSnapshot = await getDocs(pomodoroQuery);
+  
+  const sortedPomodoros = pomodoroSnapshot.docs
+    .map(doc => doc.data())
+    .sort((a: any, b: any) => {
+      const aTime = a.completedAt?.toMillis?.() || 0;
+      const bTime = b.completedAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, limitCount);
 
   const activities: any[] = [];
 
-  pomodoroSnapshot.docs.forEach(doc => {
-    const data = doc.data();
+  sortedPomodoros.forEach(data => {
     activities.push({
       type: "session",
       text: `Completed ${data.duration}-min focus session`,
@@ -906,15 +924,23 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
 
   const tasksQuery = query(
     collection(db, "tasks"),
-    where("completed", "==", true),
-    orderBy("completedAt", "desc"),
-    limit(limitCount * 2)
+    where("completed", "==", true)
   );
 
   const [pomodoroSnapshot, tasksSnapshot] = await Promise.all([
     getDocs(pomodoroQuery),
     getDocs(tasksQuery)
   ]);
+  
+  const sortedTasks = tasksSnapshot.docs
+    .map(doc => doc.data())
+    .filter((data: any) => data.completedAt)
+    .sort((a: any, b: any) => {
+      const aTime = a.completedAt?.toMillis?.() || 0;
+      const bTime = b.completedAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, limitCount * 2);
 
   const activities: any[] = [];
 
@@ -944,29 +970,26 @@ export const getGlobalActivityFeed = async (limitCount: number = 20) => {
     }
   }
 
-  for (const taskDoc of tasksSnapshot.docs) {
-    const data = taskDoc.data();
-    if (data.completedAt) {
-      let user = userCache.get(data.userId);
+  for (const data of sortedTasks) {
+    let user = userCache.get(data.userId);
 
-      if (!user) {
-        const userDoc = await getDoc(doc(db, "users", data.userId));
-        if (userDoc.exists()) {
-          user = userDoc.data();
-          userCache.set(data.userId, user);
-        }
+    if (!user) {
+      const userDoc = await getDoc(doc(db, "users", data.userId));
+      if (userDoc.exists()) {
+        user = userDoc.data();
+        userCache.set(data.userId, user);
       }
+    }
 
-      if (user) {
-        activities.push({
-          type: "task",
-          userName: user.name,
-          userId: data.userId,
-          text: `completed "${data.title}"`,
-          xp: data.xpReward,
-          timestamp: data.completedAt.toDate(),
-        });
-      }
+    if (user) {
+      activities.push({
+        type: "task",
+        userName: user.name,
+        userId: data.userId,
+        text: `completed "${data.title}"`,
+        xp: data.xpReward,
+        timestamp: data.completedAt.toDate(),
+      });
     }
   }
 
@@ -1116,8 +1139,7 @@ export const subscribeToConversation = (
   
   const q = query(
     collection(db, "messages"),
-    where("conversationId", "==", conversationId),
-    orderBy("createdAt", "asc")
+    where("conversationId", "==", conversationId)
   );
 
   return onSnapshot(q, (snapshot) => {
@@ -1125,6 +1147,11 @@ export const subscribeToConversation = (
       id: doc.id,
       ...doc.data(),
     }));
+    messages.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return aTime - bTime;
+    });
     onUpdate(messages);
   });
 };
@@ -1135,8 +1162,7 @@ export const subscribeToConversations = (
 ) => {
   const q = query(
     collection(db, "conversations"),
-    where("participants", "array-contains", userId),
-    orderBy("lastMessageTime", "desc")
+    where("participants", "array-contains", userId)
   );
 
   return onSnapshot(q, async (snapshot) => {
@@ -1171,6 +1197,12 @@ export const subscribeToConversations = (
         unreadCount,
       });
     }
+    
+    conversations.sort((a: any, b: any) => {
+      const aTime = a.lastMessageTime?.toMillis?.() || 0;
+      const bTime = b.lastMessageTime?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
     
     onUpdate(conversations);
   });
