@@ -149,17 +149,22 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 sm:py-24 bg-gradient-to-br from-primary via-secondary to-accent text-primary-foreground">
-        <div className="container mx-auto px-4">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-24">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="container mx-auto px-4 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-bounce-subtle">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Start your journey today</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               Ready to Level Up Your Study Game?
             </h2>
-            <p className="text-xl mb-8 opacity-90">
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Join DapsiGames today and turn every study session into progress.
             </p>
             <Link href="/signup">
-              <Button size="lg" variant="secondary" className="gap-2 text-lg px-8 h-14" data-testid="button-cta-signup">
+              <Button size="lg" className="gap-2 text-lg px-8 h-14" data-testid="button-cta-signup">
                 <Award className="h-5 w-5" />
                 Get Started Free
               </Button>
