@@ -1,0 +1,16 @@
+node_modules
+.git
+.env
+.env.local
+.replit
+.config
+.upm
+.cache
+*.log
+firebase-debug.log
+.DS_Store
+.vscode
+.idea
+README.md
+attached_assets
+tmp
