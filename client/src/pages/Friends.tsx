@@ -2,12 +2,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, UserPlus, UserMinus, UserCheck, UserX, Search, Trophy } from "lucide-react";
+import { Users, UserPlus, UserMinus, UserCheck, UserX, Search, Trophy, MessageSquare } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
+import { ChatDialog } from "@/components/ChatDialog";
 import { 
   getFriends, 
   getFriendRequests, 
@@ -15,7 +16,8 @@ import {
   acceptFriendRequest, 
   rejectFriendRequest,
   removeFriend,
-  searchUsers
+  searchUsers,
+  subscribeToConversations
 } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,16 +33,27 @@ function FriendsContent() {
   const { user } = useAuth();
   const [friends, setFriends] = useState<any[]>([]);
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
+  const [chatFriend, setChatFriend] = useState<any>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
       loadFriends();
       loadFriendRequests();
+      
+      const unsubscribe = subscribeToConversations(user.id, (updatedConversations) => {
+        setConversations(updatedConversations);
+      });
+
+      return () => {
+        unsubscribe();
+      };
     }
   }, [user]);
 
@@ -171,11 +184,19 @@ function FriendsContent() {
       </div>
 
       <Tabs defaultValue="my-friends" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="my-friends" data-testid="tab-my-friends">
             My Friends
             {friends.length > 0 && (
               <Badge variant="secondary" className="ml-2">{friends.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="messages" data-testid="tab-messages">
+            Messages
+            {conversations.reduce((acc, conv) => acc + conv.unreadCount, 0) > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {conversations.reduce((acc, conv) => acc + conv.unreadCount, 0)}
+              </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="requests" data-testid="tab-requests">
@@ -220,15 +241,87 @@ function FriendsContent() {
                           <Badge variant="outline">{friend.level || "Novice"}</Badge>
                         </div>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleRemoveFriend(friend.id, friend.name)}
-                        data-testid={`button-remove-friend-${friend.id}`}
-                      >
-                        <UserMinus className="h-4 w-4 mr-2" />
-                        Remove
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            setChatFriend(friend);
+                            setChatOpen(true);
+                          }}
+                          data-testid={`button-message-friend-${friend.id}`}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Message
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveFriend(friend.id, friend.name)}
+                          data-testid={`button-remove-friend-${friend.id}`}
+                        >
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="messages" className="space-y-4">
+          {conversations.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No messages yet</h3>
+                <p className="text-muted-foreground">
+                  Start a conversation with your friends!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {conversations.map((conversation) => (
+                <Card 
+                  key={conversation.id} 
+                  className="hover-elevate cursor-pointer"
+                  onClick={() => {
+                    setChatFriend(conversation.otherUser);
+                    setChatOpen(true);
+                  }}
+                  data-testid={`conversation-${conversation.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="text-lg">
+                          {conversation.otherUser.name?.[0]}{conversation.otherUser.name?.split(" ")[1]?.[0] || ""}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-lg">{conversation.otherUser.name}</h3>
+                          {conversation.unreadCount > 0 && (
+                            <Badge variant="destructive" className="ml-2">
+                              {conversation.unreadCount}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {conversation.lastMessage}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-sm font-medium text-primary flex items-center gap-1">
+                            <Trophy className="h-4 w-4" />
+                            {conversation.otherUser.xp?.toLocaleString() || 0} XP
+                          </span>
+                          <Badge variant="outline">{conversation.otherUser.level || "Novice"}</Badge>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -358,6 +451,14 @@ function FriendsContent() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {chatFriend && (
+        <ChatDialog
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          friend={chatFriend}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, User } from "firebase/auth";
-import { initializeFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, where, Timestamp, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { initializeFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, where, Timestamp, persistentLocalCache, persistentMultipleTabManager, onSnapshot } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -1068,4 +1068,129 @@ export const applyAvatarBorder = async (userId: string, borderId: string) => {
   await updateDoc(userRef, {
     avatarBorder: borderId,
   });
+};
+
+// MESSAGING SYSTEM
+export const sendMessage = async (fromUserId: string, toUserId: string, text: string) => {
+  const conversationId = [fromUserId, toUserId].sort().join('_');
+  
+  const messageData = {
+    conversationId,
+    fromUserId,
+    toUserId,
+    text,
+    read: false,
+    createdAt: Timestamp.now(),
+  };
+
+  await addDoc(collection(db, "messages"), messageData);
+  
+  const conversationRef = doc(db, "conversations", conversationId);
+  const conversationDoc = await getDoc(conversationRef);
+  
+  if (!conversationDoc.exists()) {
+    await setDoc(conversationRef, {
+      participants: [fromUserId, toUserId],
+      lastMessage: text,
+      lastMessageTime: Timestamp.now(),
+      lastMessageFrom: fromUserId,
+      createdAt: Timestamp.now(),
+    });
+  } else {
+    await updateDoc(conversationRef, {
+      lastMessage: text,
+      lastMessageTime: Timestamp.now(),
+      lastMessageFrom: fromUserId,
+    });
+  }
+
+  return messageData;
+};
+
+export const subscribeToConversation = (
+  userId: string,
+  friendId: string,
+  onUpdate: (messages: any[]) => void
+) => {
+  const conversationId = [userId, friendId].sort().join('_');
+  
+  const q = query(
+    collection(db, "messages"),
+    where("conversationId", "==", conversationId),
+    orderBy("createdAt", "asc")
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    onUpdate(messages);
+  });
+};
+
+export const subscribeToConversations = (
+  userId: string,
+  onUpdate: (conversations: any[]) => void
+) => {
+  const q = query(
+    collection(db, "conversations"),
+    where("participants", "array-contains", userId),
+    orderBy("lastMessageTime", "desc")
+  );
+
+  return onSnapshot(q, async (snapshot) => {
+    const conversations = [];
+    
+    for (const conversationDoc of snapshot.docs) {
+      const conversationData = conversationDoc.data();
+      const otherUserId = conversationData.participants.find((id: string) => id !== userId);
+      
+      const otherUserDoc = await getDoc(doc(db, "users", otherUserId));
+      const otherUserData = otherUserDoc.exists() ? otherUserDoc.data() : {};
+      
+      const unreadQuery = query(
+        collection(db, "messages"),
+        where("conversationId", "==", conversationDoc.id),
+        where("toUserId", "==", userId),
+        where("read", "==", false)
+      );
+      const unreadSnapshot = await getDocs(unreadQuery);
+      const unreadCount = unreadSnapshot.docs.length;
+      
+      conversations.push({
+        id: conversationDoc.id,
+        ...conversationData,
+        otherUser: {
+          id: otherUserId,
+          name: otherUserData.name,
+          email: otherUserData.email,
+          xp: otherUserData.xp,
+          level: otherUserData.level,
+        },
+        unreadCount,
+      });
+    }
+    
+    onUpdate(conversations);
+  });
+};
+
+export const markMessagesAsRead = async (userId: string, friendId: string) => {
+  const conversationId = [userId, friendId].sort().join('_');
+  
+  const unreadQuery = query(
+    collection(db, "messages"),
+    where("conversationId", "==", conversationId),
+    where("toUserId", "==", userId),
+    where("read", "==", false)
+  );
+  
+  const unreadSnapshot = await getDocs(unreadQuery);
+  
+  const updatePromises = unreadSnapshot.docs.map(messageDoc =>
+    updateDoc(doc(db, "messages", messageDoc.id), { read: true })
+  );
+  
+  await Promise.all(updatePromises);
 };
