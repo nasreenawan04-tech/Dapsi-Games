@@ -43,6 +43,10 @@ function ProfileContent() {
   // Fetch badges using authenticated API
   const { data: badges = [], isLoading: badgesLoading } = useQuery<any[]>({
     queryKey: ["/api/badges"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/badges");
+      return res.json();
+    },
     enabled: !!user,
   });
 
