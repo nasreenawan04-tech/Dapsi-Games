@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, User } from "firebase/auth";
 import { initializeFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, deleteDoc, where, Timestamp, persistentLocalCache, persistentMultipleTabManager, onSnapshot } from "firebase/firestore";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,6 +20,7 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 
 // Initialize Firestore with offline persistence (modern API)
 export const db = initializeFirestore(app, {
@@ -1094,10 +1096,44 @@ export const applyAvatarBorder = async (userId: string, borderId: string) => {
 };
 
 // MESSAGING SYSTEM
-export const sendMessage = async (fromUserId: string, toUserId: string, text: string) => {
+export const uploadMessageImage = async (
+  file: File,
+  fromUserId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  const timestamp = Date.now();
+  const fileName = `${timestamp}_${file.name}`;
+  const storageRef = ref(storage, `messages/${fromUserId}/${fileName}`);
+  
+  const uploadTask = uploadBytesResumable(storageRef, file);
+  
+  return new Promise((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        reject(error);
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        resolve(downloadURL);
+      }
+    );
+  });
+};
+
+export const sendMessage = async (
+  fromUserId: string,
+  toUserId: string,
+  text: string,
+  imageUrl?: string
+) => {
   const conversationId = [fromUserId, toUserId].sort().join('_');
   
-  const messageData = {
+  const messageData: any = {
     conversationId,
     fromUserId,
     toUserId,
@@ -1106,22 +1142,31 @@ export const sendMessage = async (fromUserId: string, toUserId: string, text: st
     createdAt: Timestamp.now(),
   };
 
+  if (imageUrl) {
+    messageData.imageUrl = imageUrl;
+    messageData.type = 'image';
+  } else {
+    messageData.type = 'text';
+  }
+
   await addDoc(collection(db, "messages"), messageData);
   
   const conversationRef = doc(db, "conversations", conversationId);
   const conversationDoc = await getDoc(conversationRef);
   
+  const lastMessage = imageUrl ? '📷 Photo' : text;
+  
   if (!conversationDoc.exists()) {
     await setDoc(conversationRef, {
       participants: [fromUserId, toUserId],
-      lastMessage: text,
+      lastMessage,
       lastMessageTime: Timestamp.now(),
       lastMessageFrom: fromUserId,
       createdAt: Timestamp.now(),
     });
   } else {
     await updateDoc(conversationRef, {
-      lastMessage: text,
+      lastMessage,
       lastMessageTime: Timestamp.now(),
       lastMessageFrom: fromUserId,
     });
