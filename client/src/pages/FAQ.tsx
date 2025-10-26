@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import Footer from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { StructuredData } from "@/components/StructuredData";
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
@@ -109,12 +110,29 @@ export default function FAQ() {
     }
   ];
 
+  const faqStructuredData = {
+    mainEntity: faqs.flatMap((category) =>
+      category.questions.map((faq) => ({
+        "@type": "Question",
+        name: faq.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.a
+        }
+      }))
+    )
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <SEO
         title="FAQ"
         description="Find answers to frequently asked questions about DapsiGames. Learn about our features, XP system, badges, pricing, study groups, privacy, and more."
         keywords="FAQ, frequently asked questions, help, support, how to use dapsigames, XP system, badges, premium features"
+      />
+      <StructuredData
+        type="FAQPage"
+        data={faqStructuredData}
       />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-20 sm:py-32">

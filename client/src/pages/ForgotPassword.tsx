@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Loader2, ArrowLeft } from "lucide-react";
 import logoSvg from "@assets/logo.svg";
+import { SEO } from "@/components/SEO";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -40,6 +41,11 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4">
+      <SEO
+        title="Reset Password"
+        description="Reset your DapsiGames password. Enter your email to receive a password reset link."
+        noindex={true}
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2 mb-2">

@@ -17,3 +17,4 @@ Disallow: /verify-email
 
 # Sitemap location
 Sitemap: https://dapsigames.com/sitemap.xml
+# Note: Update to your actual production domain when deploying
