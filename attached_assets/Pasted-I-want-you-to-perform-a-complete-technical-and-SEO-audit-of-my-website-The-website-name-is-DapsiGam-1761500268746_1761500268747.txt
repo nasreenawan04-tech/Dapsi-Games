@@ -1,0 +1,120 @@
+I want you to perform a complete technical and SEO audit of my website.
+The website name is DapsiGames — a Study + Productivity Hub designed for students, built using Next.js and Tailwind CSS, and deployed on Vercel.
+
+Please follow these two main steps carefully:
+
+🧩 Step 1: Full Website Audit — Detect All Issues
+
+Inspect the entire website (frontend code, structure, and configuration) and list every issue related to:
+
+1. Technical Errors:
+
+Broken links, missing assets, or 404 pages.
+
+JavaScript or build errors.
+
+Deprecated functions or unused dependencies.
+
+Unoptimized CSS or layout shifts.
+
+2. SEO Issues:
+
+Missing or duplicated <title> or <meta> tags.
+
+Missing meta description, canonical, or robots tags.
+
+Poor heading structure (H1, H2, H3 order).
+
+No sitemap or robots.txt.
+
+Missing Open Graph (OG) and Twitter meta tags.
+
+Missing structured data (JSON-LD) for organization and website schema.
+
+3. Performance Problems:
+
+Large or uncompressed images.
+
+Missing lazy loading or caching strategies.
+
+Unused or render-blocking JavaScript.
+
+Core Web Vitals issues (LCP, CLS, FID).
+
+4. Design & Accessibility:
+
+Mobile responsiveness issues.
+
+Missing alt text on images.
+
+Low contrast text or poor readability.
+
+After scanning, provide a clear summary of all detected issues grouped under:
+
+Technical
+
+SEO
+
+Performance
+
+Accessibility
+
+🛠️ Step 2: Fix & Optimize the Website
+
+For every problem detected in Step 1, automatically fix it following Next.js best practices and Google SEO guidelines.
+
+✅ Fixes & Improvements to Apply:
+
+Resolve any build, routing, or JavaScript errors.
+
+Add or correct <title> and <meta> tags for every page.
+
+Add canonical URLs, Open Graph, and Twitter meta tags.
+
+Generate and include sitemap.xml and robots.txt automatically.
+
+Add JSON-LD structured data for site, organization, and articles.
+
+Optimize all images using the Next.js <Image /> component and lazy loading.
+
+Minimize CSS and remove unused imports.
+
+Ensure all pages are responsive and mobile-friendly.
+
+Improve Lighthouse performance, SEO, and accessibility scores to 90+.
+
+Add favicon, web manifest, and consistent branding metadata.
+
+✅ After Fixing:
+
+Rebuild and test the website.
+
+Verify there are no console or build warnings.
+
+Re-run Lighthouse or internal audits to confirm high performance.
+
+Goal: Deliver a fully optimized, professional website that is:
+
+Error-free
+
+SEO-friendly
+
+Mobile-responsive
+
+Fast-loading and ready for deployment on Vercel.
+
+Tech Stack Reminder:
+
+Next.js + Tailwind CSS
+
+Static content, not a dynamic app
+
+Deployed on Vercel
+
+Output:
+
+Fixed and optimized website code
+
+List of changes and optimizations made
+
+Confirmation that site builds cleanly and performs at 90+ Lighthouse scores
