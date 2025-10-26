@@ -29,7 +29,15 @@ The application is built with a modern web stack, emphasizing a gamified user ex
 - **Study Planner**: CRUD operations for study tasks, subject categorization, due date tracking, and server-side XP rewards, with PDF export functionality.
 - **Real-time Leaderboard**: Global and filtered leaderboards (All Time, Weekly, Daily, Friends) based on XP, powered by Firestore.
 - **Badges & Rewards System**: Tracks and automatically unlocks 8 distinct badges based on user milestones with real-time notifications and level-up celebrations.
-- **User Profile**: Manages account info, XP history, stats, theme customization, and unlocked badges.
+- **User Profile**: Comprehensive profile management with:
+  - Secure profile updates (name and email) with server-side validation
+  - Real-time badge display fetched from authenticated API endpoints
+  - Recent activity feed showing pomodoro sessions and completed tasks
+  - User statistics (XP, streak, level) display
+  - Theme customization with light/dark mode toggle
+  - Skeleton loading states for optimal UX
+  - Inline validation errors and toast notifications
+  - All data fetched through authenticated API routes for security
 - **Friend System**: Supports user search, friend requests, and friend lists including a friend-specific leaderboard.
 - **Messaging System**: Real-time one-on-one messaging between friends with unread message indicators, conversation history, and auto-scrolling chat interface.
 - **Study Groups**: Facilitates creation, joining, and management of study groups with group leaderboards.
