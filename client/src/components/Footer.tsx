@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Github, Twitter, Linkedin, Mail } from "lucide-react";
+import logoSvg from "@assets/logo.svg";
 
 function Footer() {
   const currentYear = new Date().getFullYear();
@@ -27,9 +28,7 @@ function Footer() {
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 font-bold text-xl">
-              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
-                D
-              </div>
+              <img src={logoSvg} alt="DapsiGames Logo" className="h-8 w-8" />
               DapsiGames
             </div>
             <p className="text-sm text-muted-foreground">

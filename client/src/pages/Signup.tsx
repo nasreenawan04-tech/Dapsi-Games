@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
+import logoSvg from "@assets/logo.svg";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -56,9 +57,7 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
-            <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-lg">
-              D
-            </div>
+            <img src={logoSvg} alt="DapsiGames Logo" className="h-10 w-10" />
             <CardTitle className="text-2xl font-bold">DapsiGames</CardTitle>
           </div>
           <CardDescription>
