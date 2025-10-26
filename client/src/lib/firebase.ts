@@ -1226,3 +1226,144 @@ export const markMessagesAsRead = async (userId: string, friendId: string) => {
   
   await Promise.all(updatePromises);
 };
+
+export const updateOnlineStatus = async (userId: string, isOnline: boolean) => {
+  const userRef = doc(db, "users", userId);
+  await updateDoc(userRef, {
+    isOnline,
+    lastSeen: Timestamp.now(),
+  });
+};
+
+export const subscribeToUserStatus = (userId: string, onUpdate: (status: any) => void) => {
+  const userRef = doc(db, "users", userId);
+  return onSnapshot(userRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      onUpdate({
+        isOnline: data.isOnline || false,
+        lastSeen: data.lastSeen,
+      });
+    }
+  });
+};
+
+export const setTypingStatus = async (conversationId: string, userId: string, isTyping: boolean) => {
+  const typingRef = doc(db, "typing", conversationId);
+  if (isTyping) {
+    await setDoc(typingRef, {
+      [userId]: Timestamp.now(),
+    }, { merge: true });
+  } else {
+    const typingDoc = await getDoc(typingRef);
+    if (typingDoc.exists()) {
+      const data = typingDoc.data();
+      delete data[userId];
+      if (Object.keys(data).length === 0) {
+        await deleteDoc(typingRef);
+      } else {
+        await setDoc(typingRef, data);
+      }
+    }
+  }
+};
+
+export const subscribeToTypingStatus = (
+  conversationId: string,
+  currentUserId: string,
+  onUpdate: (isTyping: boolean) => void
+) => {
+  const typingRef = doc(db, "typing", conversationId);
+  return onSnapshot(typingRef, (snapshot) => {
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      const otherUserIds = Object.keys(data).filter(id => id !== currentUserId);
+      const isTyping = otherUserIds.length > 0;
+      const lastTypingTime = otherUserIds.length > 0 
+        ? data[otherUserIds[0]]?.toMillis?.() || 0 
+        : 0;
+      const now = Date.now();
+      const isRecent = (now - lastTypingTime) < 5000;
+      onUpdate(isTyping && isRecent);
+    } else {
+      onUpdate(false);
+    }
+  });
+};
+
+export const addMessageReaction = async (messageId: string, userId: string, reaction: string) => {
+  const messageRef = doc(db, "messages", messageId);
+  const messageDoc = await getDoc(messageRef);
+  
+  if (messageDoc.exists()) {
+    const reactions = messageDoc.data().reactions || {};
+    if (!reactions[reaction]) {
+      reactions[reaction] = [];
+    }
+    if (!reactions[reaction].includes(userId)) {
+      reactions[reaction].push(userId);
+    }
+    await updateDoc(messageRef, { reactions });
+  }
+};
+
+export const removeMessageReaction = async (messageId: string, userId: string, reaction: string) => {
+  const messageRef = doc(db, "messages", messageId);
+  const messageDoc = await getDoc(messageRef);
+  
+  if (messageDoc.exists()) {
+    const reactions = messageDoc.data().reactions || {};
+    if (reactions[reaction]) {
+      reactions[reaction] = reactions[reaction].filter((id: string) => id !== userId);
+      if (reactions[reaction].length === 0) {
+        delete reactions[reaction];
+      }
+    }
+    await updateDoc(messageRef, { reactions });
+  }
+};
+
+export const deleteMessage = async (messageId: string) => {
+  const messageRef = doc(db, "messages", messageId);
+  await updateDoc(messageRef, {
+    deleted: true,
+    text: "This message was deleted",
+  });
+};
+
+export const editMessage = async (messageId: string, newText: string) => {
+  const messageRef = doc(db, "messages", messageId);
+  await updateDoc(messageRef, {
+    text: newText,
+    edited: true,
+    editedAt: Timestamp.now(),
+  });
+};
+
+export const getSuggestedFriends = async (userId: string, userXP: number) => {
+  const userDoc = await getDoc(doc(db, "users", userId));
+  if (!userDoc.exists()) return [];
+
+  const userData = userDoc.data();
+  const friendIds = userData.friends || [];
+
+  const usersQuery = query(collection(db, "users"));
+  const usersSnapshot = await getDocs(usersQuery);
+
+  const suggestions = usersSnapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter((u: any) => {
+      if (u.id === userId) return false;
+      if (friendIds.includes(u.id)) return false;
+      const xpDiff = Math.abs((u.xp || 0) - userXP);
+      return xpDiff < 500;
+    })
+    .sort((a: any, b: any) => {
+      const aDiff = Math.abs((a.xp || 0) - userXP);
+      const bDiff = Math.abs((b.xp || 0) - userXP);
+      return aDiff - bDiff;
+    })
+    .slice(0, 5);
+
+  return suggestions;
+};
