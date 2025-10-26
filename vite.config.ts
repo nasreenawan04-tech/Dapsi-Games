@@ -45,60 +45,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'firebase-storage-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              }
-            }
-          },
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5
-              }
-            }
-          }
-        ]
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 3000000,
       }
     }),
     ...(process.env.NODE_ENV !== "production" &&
@@ -124,70 +72,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV !== 'production',
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Core React libraries
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-            return 'react-vendor';
-          }
-          
-          // Firebase libraries
-          if (id.includes('firebase') || id.includes('@firebase')) {
-            return 'firebase';
-          }
-          
-          // Radix UI components (large UI library)
-          if (id.includes('@radix-ui')) {
-            return 'radix-ui';
-          }
-          
-          // Form libraries
-          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
-            return 'forms';
-          }
-          
-          // Chart/visualization libraries
-          if (id.includes('recharts') || id.includes('d3-')) {
-            return 'charts';
-          }
-          
-          // Stripe
-          if (id.includes('@stripe') || id.includes('stripe')) {
-            return 'stripe';
-          }
-          
-          // Icons and animations
-          if (id.includes('lucide-react') || id.includes('react-icons') || id.includes('framer-motion')) {
-            return 'ui-icons';
-          }
-          
-          // TanStack Query
-          if (id.includes('@tanstack')) {
-            return 'tanstack';
-          }
-          
-          // PDF generation
-          if (id.includes('jspdf')) {
-            return 'jspdf';
-          }
-          
-          // Other large vendor libraries
+          // Group all node_modules into a single vendor chunk to reduce memory usage
           if (id.includes('node_modules')) {
             return 'vendor';
           }
         },
       },
     },
-    chunkSizeWarningLimit: 2000,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: process.env.NODE_ENV === 'production',
-        drop_debugger: process.env.NODE_ENV === 'production',
-      },
-    },
+    chunkSizeWarningLimit: 3000,
+    minify: 'esbuild',
   },
   server: {
     fs: {
