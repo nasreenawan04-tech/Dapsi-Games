@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Mail, Trophy, Flame, TrendingUp, Settings, Award, Lock } from "lucide-react";
+import { User, Mail, Trophy, Flame, TrendingUp, Settings, Award, Lock, Key, Upload, Trash2 } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Badge } from "@/components/ui/badge";
 import { XPProgressBar } from "@/components/XPProgressBar";
@@ -16,6 +16,19 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryClient } from "@/lib/queryClient";
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Profile() {
   return (
@@ -31,6 +44,11 @@ function ProfileContent() {
   const [email, setEmail] = useState("");
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,24 +78,34 @@ function ProfileContent() {
     enabled: !!user,
   });
 
+  // Fetch detailed statistics
+  const { data: detailedStats, isLoading: statsLoading } = useQuery<any>({
+    queryKey: ["/api/users/detailed-stats"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/users/detailed-stats");
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
   const updateProfileMutation = useMutation({
     mutationFn: async (data: { name?: string; email?: string }) => {
       const res = await apiRequest("PATCH", "/api/users/profile", data);
       return res.json();
     },
-    onSuccess: async (data) => {
-      await refreshUser();
+    onSuccess: (data) => {
+      refreshUser();
       toast({
         title: "Profile Updated",
         description: "Your profile information has been saved successfully.",
       });
     },
-    onError: async (error: any) => {
+    onError: (error) => {
       let errorMessage = "Failed to update profile. Please try again.";
       
       try {
-        const errorData = await error.response?.json();
-        errorMessage = errorData?.error || errorMessage;
+        // Simplified error handling for non-async callback
+        errorMessage = (error as any)?.message || errorMessage;
       } catch (e) {
         // Use default message
       }
@@ -85,6 +113,48 @@ function ProfileContent() {
       toast({
         title: "Error Updating Profile",
         description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (avatarUrl: string) => {
+      const res = await apiRequest("PATCH", "/api/users/avatar", { avatarUrl });
+      return res.json();
+    },
+    onSuccess: () => {
+      refreshUser();
+      toast({
+        title: "Avatar Updated",
+        description: "Your avatar has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update avatar. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/users/account");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
+      });
+      window.location.href = "/";
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again.",
         variant: "destructive",
       });
     },
@@ -134,6 +204,66 @@ function ProfileContent() {
     }
 
     updateProfileMutation.mutate(updates);
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError("");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("All password fields are required");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.email) {
+        throw new Error("Not authenticated");
+      }
+
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword
+      );
+
+      await reauthenticateWithCredential(currentUser, credential);
+
+      await updatePassword(currentUser, newPassword);
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      toast({
+        title: "Password Updated",
+        description: "Your password has been changed successfully.",
+      });
+    } catch (error: any) {
+      let errorMessage = "Failed to update password.";
+      
+      if (error.code === "auth/wrong-password") {
+        errorMessage = "Current password is incorrect";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password is too weak";
+      } else if (error.code === "auth/requires-recent-login") {
+        errorMessage = "Please log out and log in again to change your password";
+      }
+
+      setPasswordError(errorMessage);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const isLoading = badgesLoading || activitiesLoading;
@@ -291,6 +421,84 @@ function ProfileContent() {
                 disabled={isSaving}
               >
                 {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Password Change */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Change Password
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="flex gap-2">
+                  <Lock className="h-5 w-5 text-muted-foreground mt-2.5" />
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      setPasswordError("");
+                    }}
+                    data-testid="input-current-password"
+                    disabled={isChangingPassword}
+                    placeholder="Enter current password"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="flex gap-2">
+                  <Key className="h-5 w-5 text-muted-foreground mt-2.5" />
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPasswordError("");
+                    }}
+                    data-testid="input-new-password"
+                    disabled={isChangingPassword}
+                    placeholder="Enter new password (min 6 characters)"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <div className="flex gap-2">
+                  <Key className="h-5 w-5 text-muted-foreground mt-2.5" />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setPasswordError("");
+                    }}
+                    data-testid="input-confirm-password"
+                    disabled={isChangingPassword}
+                    placeholder="Confirm new password"
+                  />
+                </div>
+              </div>
+              {passwordError && (
+                <p className="text-sm text-red-500" data-testid="error-password">{passwordError}</p>
+              )}
+              <Button 
+                onClick={handlePasswordChange} 
+                className="w-full" 
+                data-testid="button-change-password"
+                disabled={isChangingPassword}
+                variant="secondary"
+              >
+                {isChangingPassword ? "Updating Password..." : "Update Password"}
               </Button>
             </CardContent>
           </Card>

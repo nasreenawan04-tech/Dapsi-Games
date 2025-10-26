@@ -522,6 +522,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get detailed user statistics
+  app.get("/api/users/detailed-stats", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userId!;
+
+      const [pomodoroSnapshot, tasksSnapshot, completedTasksSnapshot, badgesSnapshot] = await Promise.all([
+        db.collection('pomodoroSessions').where('userId', '==', userId).get(),
+        db.collection('tasks').where('userId', '==', userId).get(),
+        db.collection('tasks').where('userId', '==', userId).where('completed', '==', true).get(),
+        db.collection('userBadges').where('userId', '==', userId).get(),
+      ]);
+
+      const totalSessions = pomodoroSnapshot.size;
+      const totalTasks = tasksSnapshot.size;
+      const completedTasks = completedTasksSnapshot.size;
+      const totalBadges = badgesSnapshot.size;
+      const pendingTasks = totalTasks - completedTasks;
+
+      let totalFocusMinutes = 0;
+      pomodoroSnapshot.docs.forEach(doc => {
+        totalFocusMinutes += doc.data().duration || 0;
+      });
+
+      return res.json({
+        totalSessions,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        totalBadges,
+        totalFocusMinutes,
+      });
+    } catch (error: any) {
+      console.error("Error fetching detailed stats:", error);
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Update user avatar
+  app.patch("/api/users/avatar", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userId!;
+      const { avatarUrl } = req.body;
+
+      if (!avatarUrl || typeof avatarUrl !== 'string') {
+        return res.status(400).json({ error: "Invalid avatar URL" });
+      }
+
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        avatar: avatarUrl,
+      });
+
+      return res.json({ success: true, avatarUrl });
+    } catch (error: any) {
+      console.error("Error updating avatar:", error);
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
+  // Delete user account
+  app.delete("/api/users/account", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.userId!;
+
+      await Promise.all([
+        db.collection('users').doc(userId).delete(),
+        adminAuth.deleteUser(userId),
+      ]);
+
+      const collectionsToDelete = ['tasks', 'pomodoroSessions', 'userBadges', 'activities'];
+      await Promise.all(
+        collectionsToDelete.map(async (collectionName) => {
+          const snapshot = await db.collection(collectionName).where('userId', '==', userId).get();
+          const batch = db.batch();
+          snapshot.docs.forEach(doc => batch.delete(doc.ref));
+          return batch.commit();
+        })
+      );
+
+      return res.json({ success: true, message: "Account deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting account:", error);
+      return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  });
+
   // Create Stripe subscription for premium membership
   app.post("/api/create-subscription", verifyFirebaseToken, async (req: AuthenticatedRequest, res: Response) => {
     try {
