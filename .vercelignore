@@ -11,6 +11,9 @@ firebase-debug.log
 .DS_Store
 .vscode
 .idea
-README.md
 attached_assets
 tmp
+client/src
+server/vite.ts
+vite.config.ts
+tsconfig.json
