@@ -10,6 +10,15 @@
 
 **Migration Status: ✅ COMPLETE - DapsiGames successfully migrated to new Replit environment!**
 
+## Vercel Deployment Fix (October 26, 2025) ✅ COMPLETE
+[x] 1. Create client/src/assets directory ✅
+[x] 2. Copy logo.svg from attached_assets to client/src/assets ✅
+[x] 3. Update vite.config.ts @assets alias to point to client/src/assets ✅
+[x] 4. Verify application still works in Replit ✅
+[x] 5. Test that logo displays correctly ✅
+
+**Fix Status: ✅ COMPLETE - Assets moved from Replit-specific directory to standard location that works in Vercel!**
+
 ---
 
 ## Previous Project Import - Migration to Replit Environment ✅ COMPLETE
