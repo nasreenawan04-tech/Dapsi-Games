@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
+import logoSvg from "@assets/logo.svg";
 
 function Navigation() {
   const { user, logout } = useAuth();
@@ -24,9 +25,7 @@ function Navigation() {
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl shrink-0" data-testid="link-home">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
-              D
-            </div>
+            <img src={logoSvg} alt="DapsiGames Logo" className="h-8 w-8" />
             <span className="hidden sm:inline">DapsiGames</span>
           </Link>
 
@@ -117,9 +116,7 @@ function Navigation() {
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl">
-            <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
-              D
-            </div>
+            <img src={logoSvg} alt="DapsiGames Logo" className="h-8 w-8" />
             <span className="hidden sm:inline">DapsiGames</span>
           </div>
           <div className="flex items-center gap-2">
@@ -160,9 +157,7 @@ function Navigation() {
       <div className="container mx-auto px-3 sm:px-4 h-16 flex items-center justify-between gap-2">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg sm:text-xl shrink-0" data-testid="link-home">
-          <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
-            D
-          </div>
+          <img src={logoSvg} alt="DapsiGames Logo" className="h-8 w-8" />
           <span className="hidden sm:inline">DapsiGames</span>
         </Link>
 
