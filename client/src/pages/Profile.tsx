@@ -13,6 +13,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { ThemeIndicator } from "@/components/ThemeIndicator";
 import { useToast } from "@/hooks/use-toast";
 import { getUserBadges, getRecentActivities } from "@/lib/firebase";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Profile() {
   return (
@@ -23,7 +25,7 @@ export default function Profile() {
 }
 
 function ProfileContent() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
   const [badges, setBadges] = useState<any[]>([]);
@@ -33,6 +35,8 @@ function ProfileContent() {
 
   useEffect(() => {
     if (user) {
+      setName(user.name);
+      setEmail(user.email);
       loadProfileData();
     }
   }, [user]);
@@ -58,14 +62,49 @@ function ProfileContent() {
     }
   };
 
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: { name?: string; email?: string }) => {
+      return await apiRequest("PATCH", "/api/users/profile", data);
+    },
+    onSuccess: async () => {
+      await refreshUser();
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Updating Profile",
+        description: error.message || "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user) return null;
   if (loading) return <div className="container mx-auto px-4 py-8">Loading profile...</div>;
 
   const handleSave = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved successfully.",
-    });
+    const updates: { name?: string; email?: string } = {};
+    
+    if (name !== user.name) {
+      updates.name = name;
+    }
+    
+    if (email !== user.email) {
+      updates.email = email;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      toast({
+        title: "No Changes",
+        description: "No changes were made to your profile.",
+      });
+      return;
+    }
+
+    updateProfileMutation.mutate(updates);
   };
 
   const stats = [
@@ -193,8 +232,13 @@ function ProfileContent() {
                 </div>
                 <ThemeToggle />
               </div>
-              <Button onClick={handleSave} className="w-full" data-testid="button-save-profile">
-                Save Changes
+              <Button 
+                onClick={handleSave} 
+                className="w-full" 
+                data-testid="button-save-profile"
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </CardContent>
           </Card>
