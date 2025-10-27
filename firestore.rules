@@ -14,8 +14,14 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
-    function isEmailVerified() {
-      return request.auth.token.email_verified == true;
+    // Validate required fields exist in request data
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    // Check if only specific fields are being modified
+    function onlyUpdating(allowedFields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
     }
     
     // ============================================
@@ -26,18 +32,35 @@ service cloud.firestore {
       // Allow read if authenticated
       allow read: if isAuthenticated();
       
-      // Allow create during signup
+      // Allow create during signup with required fields
       // Must be the user creating their own profile
       allow create: if isAuthenticated() && 
-                      isOwner(userId);
+                      isOwner(userId) &&
+                      hasRequiredFields(['email', 'name']) &&
+                      request.resource.data.email is string &&
+                      request.resource.data.name is string &&
+                      // Ensure server-managed fields start with safe defaults or are absent
+                      (!request.resource.data.keys().hasAny(['xp', 'level', 'streak']) ||
+                       (request.resource.data.xp == 0 &&
+                        request.resource.data.level == "Novice" &&
+                        request.resource.data.streak == 0));
       
       // Allow update by owner
-      // Only protect critical identity fields
+      // CRITICAL: Prevent users from modifying server-managed fields
+      // Users can only update: name, avatar, lastActive
       allow update: if isAuthenticated() && 
                       isOwner(userId) &&
-                      // Block only identity fields that should never change
-                      (!request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['id', 'email', 'createdAt']));
+                      // Only allow updates to safe fields
+                      onlyUpdating(['name', 'avatar', 'lastActive']) &&
+                      // Validate data types
+                      (request.resource.data.name is string) &&
+                      (!request.resource.data.keys().hasAny(['avatar']) || request.resource.data.avatar is string) &&
+                      // Block modification of identity and server-managed fields
+                      resource.data.id == request.resource.data.id &&
+                      resource.data.email == request.resource.data.email &&
+                      resource.data.xp == request.resource.data.xp &&
+                      resource.data.level == request.resource.data.level &&
+                      resource.data.streak == request.resource.data.streak;
       
       // No client-side deletion
       allow delete: if false;
@@ -52,19 +75,40 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Allow create if authenticated and email verified
+      // Allow create with required fields and validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.userId);
+                      isOwner(request.resource.data.userId) &&
+                      hasRequiredFields(['userId', 'title']) &&
+                      request.resource.data.userId is string &&
+                      request.resource.data.title is string &&
+                      request.resource.data.title.size() > 0 &&
+                      (!request.resource.data.keys().hasAny(['subject']) || request.resource.data.subject is string) &&
+                      (!request.resource.data.keys().hasAny(['dueDate']) || request.resource.data.dueDate is timestamp) &&
+                      (!request.resource.data.keys().hasAny(['completed']) || request.resource.data.completed == false) &&
+                      // Prevent client from setting arbitrary XP rewards
+                      (!request.resource.data.keys().hasAny(['xpReward']) || request.resource.data.xpReward == 10);
       
-      // Allow update by owner
+      // Allow update by owner - users can update all fields except userId and xpReward
       allow update: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(resource.data.userId);
+                      isOwner(resource.data.userId) &&
+                      request.resource.data.userId == resource.data.userId &&
+                      // Prevent modification of XP reward to prevent cheating
+                      request.resource.data.xpReward == resource.data.xpReward &&
+                      // Validate title if updated
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['title']) ||
+                       (request.resource.data.title is string && request.resource.data.title.size() > 0)) &&
+                      // Validate subject if updated
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['subject']) ||
+                       request.resource.data.subject is string) &&
+                      // Validate dueDate if updated
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['dueDate']) ||
+                       request.resource.data.dueDate is timestamp) &&
+                      // Validate completed if updated
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['completed']) ||
+                       request.resource.data.completed is bool);
       
       // Allow delete by owner
       allow delete: if isAuthenticated() && 
-                      isEmailVerified() &&
                       isOwner(resource.data.userId);
     }
     
@@ -77,29 +121,49 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Allow create if authenticated and email verified
+      // Allow create with validation
+      // CRITICAL: Prevent XP manipulation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.userId);
+                      isOwner(request.resource.data.userId) &&
+                      hasRequiredFields(['userId', 'duration', 'xpEarned']) &&
+                      request.resource.data.userId is string &&
+                      request.resource.data.duration is int &&
+                      request.resource.data.duration > 0 &&
+                      request.resource.data.duration <= 90 &&
+                      request.resource.data.xpEarned is int &&
+                      // Validate XP is reasonable (5 XP per session max to prevent cheating)
+                      request.resource.data.xpEarned >= 0 &&
+                      request.resource.data.xpEarned <= 5;
       
-      // No updates or deletions
+      // No updates or deletions - sessions are immutable
       allow update: if false;
       allow delete: if false;
+    }
+    
+    // ============================================
+    // BADGES COLLECTION (Read-only reference data)
+    // ============================================
+    
+    match /badges/{badgeId} {
+      // Allow all authenticated users to read available badges
+      allow read: if isAuthenticated();
+      
+      // No client-side writes - badges are managed server-side only
+      allow create, update, delete: if false;
     }
     
     // ============================================
     // USER BADGES COLLECTION
     // ============================================
     
-    match /userBadges/{badgeId} {
+    match /userBadges/{userBadgeId} {
       // Allow read if owner
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Allow create if authenticated and owner
-      allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.userId);
+      // CRITICAL: Badge unlocking should be server-side only
+      // Clients should not be able to award themselves badges
+      allow create: if false;
       
       // No updates or deletions
       allow update: if false;
@@ -116,18 +180,27 @@ service cloud.firestore {
                     (isOwner(resource.data.fromUserId) || 
                      isOwner(resource.data.toUserId));
       
-      // Allow create if you're the sender
+      // Allow create if you're the sender with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.fromUserId);
+                      isOwner(request.resource.data.fromUserId) &&
+                      hasRequiredFields(['fromUserId', 'toUserId', 'status']) &&
+                      request.resource.data.fromUserId is string &&
+                      request.resource.data.toUserId is string &&
+                      request.resource.data.fromUserId != request.resource.data.toUserId &&
+                      request.resource.data.status == 'pending';
       
       // Allow update if you're the receiver (to accept/reject)
+      // Can only update status field
       allow update: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(resource.data.toUserId);
+                      isOwner(resource.data.toUserId) &&
+                      onlyUpdating(['status']) &&
+                      request.resource.data.status in ['accepted', 'rejected'] &&
+                      resource.data.status == 'pending';
       
-      // No client-side deletion
-      allow delete: if false;
+      // Allow sender to cancel pending request
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.fromUserId) &&
+                      resource.data.status == 'pending';
     }
     
     // ============================================
@@ -140,18 +213,20 @@ service cloud.firestore {
                     (isOwner(resource.data.userId) || 
                      isOwner(resource.data.friendId));
       
-      // Allow create if authenticated and you're one of the friends
+      // Allow create with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
                       (isOwner(request.resource.data.userId) || 
-                       isOwner(request.resource.data.friendId));
+                       isOwner(request.resource.data.friendId)) &&
+                      hasRequiredFields(['userId', 'friendId']) &&
+                      request.resource.data.userId is string &&
+                      request.resource.data.friendId is string &&
+                      request.resource.data.userId != request.resource.data.friendId;
       
-      // No updates
+      // No updates - friendships are immutable
       allow update: if false;
       
       // Allow delete if you're one of the friends (unfriend)
       allow delete: if isAuthenticated() && 
-                      isEmailVerified() &&
                       (isOwner(resource.data.userId) || 
                        isOwner(resource.data.friendId));
     }
@@ -164,19 +239,33 @@ service cloud.firestore {
       // Allow read if authenticated
       allow read: if isAuthenticated();
       
-      // Allow create if authenticated and email verified
+      // Allow create with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.creatorId);
+                      isOwner(request.resource.data.creatorId) &&
+                      hasRequiredFields(['name', 'creatorId']) &&
+                      request.resource.data.name is string &&
+                      request.resource.data.name.size() > 0 &&
+                      request.resource.data.name.size() <= 100 &&
+                      request.resource.data.creatorId is string &&
+                      (!request.resource.data.keys().hasAny(['description']) || 
+                       (request.resource.data.description is string && request.resource.data.description.size() <= 500));
       
       // Allow update by creator
       allow update: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(resource.data.creatorId);
+                      isOwner(resource.data.creatorId) &&
+                      // Can't change creator
+                      request.resource.data.creatorId == resource.data.creatorId &&
+                      // Validate name if changed
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['name']) ||
+                       (request.resource.data.name is string && 
+                        request.resource.data.name.size() > 0 &&
+                        request.resource.data.name.size() <= 100)) &&
+                      // Validate description if changed
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['description']) ||
+                       (request.resource.data.description is string && request.resource.data.description.size() <= 500));
       
       // Allow delete by creator
       allow delete: if isAuthenticated() && 
-                      isEmailVerified() &&
                       isOwner(resource.data.creatorId);
     }
     
@@ -188,17 +277,18 @@ service cloud.firestore {
       // Allow read if authenticated
       allow read: if isAuthenticated();
       
-      // Allow create if joining as yourself
+      // Allow create if joining as yourself with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.userId);
+                      isOwner(request.resource.data.userId) &&
+                      hasRequiredFields(['userId', 'groupId']) &&
+                      request.resource.data.userId is string &&
+                      request.resource.data.groupId is string;
       
       // No direct updates
       allow update: if false;
       
       // Allow delete if removing yourself
       allow delete: if isAuthenticated() && 
-                      isEmailVerified() &&
                       isOwner(resource.data.userId);
     }
     
@@ -211,10 +301,9 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Allow create if authenticated and owner
-      allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.userId);
+      // Purchases should be created server-side via payment processing
+      // to prevent fraud
+      allow create: if false;
       
       // No updates or deletions
       allow update: if false;
@@ -229,14 +318,21 @@ service cloud.firestore {
       // Allow read if authenticated (global feed)
       allow read: if isAuthenticated();
       
-      // Allow create if authenticated and owner
+      // Allow create with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.userId);
+                      isOwner(request.resource.data.userId) &&
+                      hasRequiredFields(['userId', 'type', 'data']) &&
+                      request.resource.data.userId is string &&
+                      request.resource.data.type is string &&
+                      request.resource.data.type in ['task_completed', 'level_up', 'badge_unlocked', 'pomodoro_completed', 'streak_milestone'] &&
+                      request.resource.data.data is map;
       
-      // No updates or deletions
+      // No updates
       allow update: if false;
-      allow delete: if false;
+      
+      // Allow owner to delete their own activities
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.userId);
     }
     
     // ============================================
@@ -249,34 +345,48 @@ service cloud.firestore {
                     (isOwner(resource.data.fromUserId) || 
                      isOwner(resource.data.toUserId));
       
-      // Allow create if authenticated, email verified, and you're the sender
+      // Allow create with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      isOwner(request.resource.data.fromUserId);
+                      isOwner(request.resource.data.fromUserId) &&
+                      hasRequiredFields(['fromUserId', 'toUserId', 'text']) &&
+                      request.resource.data.fromUserId is string &&
+                      request.resource.data.toUserId is string &&
+                      request.resource.data.fromUserId != request.resource.data.toUserId &&
+                      request.resource.data.text is string &&
+                      request.resource.data.text.size() > 0 &&
+                      request.resource.data.text.size() <= 5000 &&
+                      // Ensure read status starts as false
+                      (!request.resource.data.keys().hasAny(['read']) || request.resource.data.read == false) &&
+                      // Ensure deleted starts as false
+                      (!request.resource.data.keys().hasAny(['deleted']) || request.resource.data.deleted == false);
       
-      // Allow update for:
-      // 1. Mark as read (receiver only)
-      // 2. Add/remove reactions (any participant)
-      // 3. Edit message text (sender only)
-      // 4. Soft delete (sender only)
+      // Allow update for specific scenarios with validation
       allow update: if isAuthenticated() && 
-                      isEmailVerified() &&
                       (
                         // Receiver can mark as read
                         (isOwner(resource.data.toUserId) &&
-                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])) ||
+                         onlyUpdating(['read']) &&
+                         request.resource.data.read == true) ||
                         
                         // Any participant can add/remove reactions
                         ((isOwner(resource.data.fromUserId) || isOwner(resource.data.toUserId)) &&
-                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])) ||
+                         onlyUpdating(['reactions']) &&
+                         request.resource.data.reactions is map) ||
                         
-                        // Sender can edit message text
+                        // Sender can edit message text (within reasonable time)
                         (isOwner(resource.data.fromUserId) &&
-                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'edited', 'editedAt'])) ||
+                         onlyUpdating(['text', 'edited', 'editedAt']) &&
+                         request.resource.data.text is string &&
+                         request.resource.data.text.size() > 0 &&
+                         request.resource.data.text.size() <= 5000 &&
+                         request.resource.data.edited == true &&
+                         request.resource.data.editedAt is timestamp) ||
                         
                         // Sender can soft delete
                         (isOwner(resource.data.fromUserId) &&
-                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted', 'text']))
+                         onlyUpdating(['deleted', 'text']) &&
+                         request.resource.data.deleted == true &&
+                         request.resource.data.text == '[Message deleted]')
                       );
       
       // No hard deletion
@@ -292,15 +402,21 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     request.auth.uid in resource.data.participants;
       
-      // Allow create if you're a participant
+      // Allow create if you're a participant with validation
       allow create: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      request.auth.uid in request.resource.data.participants;
+                      hasRequiredFields(['participants']) &&
+                      request.resource.data.participants is list &&
+                      request.resource.data.participants.size() == 2 &&
+                      request.auth.uid in request.resource.data.participants &&
+                      request.resource.data.participants[0] is string &&
+                      request.resource.data.participants[1] is string &&
+                      request.resource.data.participants[0] != request.resource.data.participants[1];
       
       // Allow update if you're a participant (for lastMessage updates)
       allow update: if isAuthenticated() && 
-                      isEmailVerified() &&
-                      request.auth.uid in resource.data.participants;
+                      request.auth.uid in resource.data.participants &&
+                      // Participants list can't be modified
+                      request.resource.data.participants == resource.data.participants;
       
       // No deletion
       allow delete: if false;
@@ -310,15 +426,20 @@ service cloud.firestore {
     // TYPING STATUS COLLECTION
     // ============================================
     
-    match /typing/{conversationId} {
+    match /typing/{typingId} {
       // Allow read if authenticated
       allow read: if isAuthenticated();
       
-      // Allow create/update to set typing status
-      allow create, update: if isAuthenticated() && isEmailVerified();
+      // Allow create/update to set typing status with validation
+      allow create, update: if isAuthenticated() &&
+                              hasRequiredFields(['userId', 'conversationId', 'isTyping']) &&
+                              isOwner(request.resource.data.userId) &&
+                              request.resource.data.userId is string &&
+                              request.resource.data.conversationId is string &&
+                              request.resource.data.isTyping is bool;
       
-      // Allow delete to clear typing status
-      allow delete: if isAuthenticated() && isEmailVerified();
+      // Allow delete to clear own typing status
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
     // ============================================
@@ -329,8 +450,11 @@ service cloud.firestore {
       // Allow read if authenticated
       allow read: if isAuthenticated();
       
-      // Allow create/update by owner
-      allow create, update: if isAuthenticated() && isOwner(userId);
+      // Allow create/update by owner with validation
+      allow create, update: if isAuthenticated() && 
+                              isOwner(userId) &&
+                              hasRequiredFields(['status']) &&
+                              request.resource.data.status in ['online', 'offline', 'away'];
       
       // Allow delete by owner
       allow delete: if isAuthenticated() && isOwner(userId);
