@@ -31,13 +31,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                       isOwner(userId);
       
-      // Allow update with restrictions
-      // Users can update most fields EXCEPT critical game data
+      // Allow update by owner
+      // Only protect critical identity fields
       allow update: if isAuthenticated() && 
                       isOwner(userId) &&
-                      // Block critical fields: xp, level, streak can only be updated by server
+                      // Block only identity fields that should never change
                       (!request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['id', 'email', 'xp', 'level', 'streak', 'createdAt']));
+                        .hasAny(['id', 'email', 'createdAt']));
       
       // No client-side deletion
       allow delete: if false;
@@ -77,8 +77,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Server-only creation (via API)
-      allow create: if false;
+      // Allow create if authenticated and email verified
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.userId);
+      
+      // No updates or deletions
       allow update: if false;
       allow delete: if false;
     }
@@ -92,8 +96,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Server-only creation (via Admin SDK)
-      allow create: if false;
+      // Allow create if authenticated and owner
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.userId);
+      
+      // No updates or deletions
       allow update: if false;
       allow delete: if false;
     }
@@ -132,8 +140,13 @@ service cloud.firestore {
                     (isOwner(resource.data.userId) || 
                      isOwner(resource.data.friendId));
       
-      // Server-only creation (via Admin SDK)
-      allow create: if false;
+      // Allow create if authenticated and you're one of the friends
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      (isOwner(request.resource.data.userId) || 
+                       isOwner(request.resource.data.friendId));
+      
+      // No updates
       allow update: if false;
       
       // Allow delete if you're one of the friends (unfriend)
@@ -198,8 +211,12 @@ service cloud.firestore {
       allow read: if isAuthenticated() && 
                     isOwner(resource.data.userId);
       
-      // Server-only creation (via API)
-      allow create: if false;
+      // Allow create if authenticated and owner
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.userId);
+      
+      // No updates or deletions
       allow update: if false;
       allow delete: if false;
     }
@@ -212,14 +229,18 @@ service cloud.firestore {
       // Allow read if authenticated (global feed)
       allow read: if isAuthenticated();
       
-      // Server-only creation (via API)
-      allow create: if false;
+      // Allow create if authenticated and owner
+      allow create: if isAuthenticated() && 
+                      isEmailVerified() &&
+                      isOwner(request.resource.data.userId);
+      
+      // No updates or deletions
       allow update: if false;
       allow delete: if false;
     }
     
     // ============================================
-    // MESSAGES COLLECTION - COMPLETE RULES
+    // MESSAGES COLLECTION
     // ============================================
     
     match /messages/{messageId} {
@@ -298,6 +319,21 @@ service cloud.firestore {
       
       // Allow delete to clear typing status
       allow delete: if isAuthenticated() && isEmailVerified();
+    }
+    
+    // ============================================
+    // PRESENCE COLLECTION (for online/offline status)
+    // ============================================
+    
+    match /presence/{userId} {
+      // Allow read if authenticated
+      allow read: if isAuthenticated();
+      
+      // Allow create/update by owner
+      allow create, update: if isAuthenticated() && isOwner(userId);
+      
+      // Allow delete by owner
+      allow delete: if isAuthenticated() && isOwner(userId);
     }
     
     // ============================================
