@@ -1,20 +1,23 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": "dist/public",
   "framework": null,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    },
-    {
       "source": "/(.*)",
-      "destination": "/api"
+      "destination": "/index.html"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "regions": ["iad1"]
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
