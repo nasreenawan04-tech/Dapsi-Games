@@ -29,7 +29,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { SEO } from "@/components/SEO";
 
 export default function Profile() {
   return (
@@ -300,11 +299,6 @@ function ProfileContent() {
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
-      <SEO
-        title="Your Profile"
-        description="Manage your profile, view your progress, and customize your study experience."
-        noindex={true}
-      />
       {/* Header Section */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">

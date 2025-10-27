@@ -8,7 +8,6 @@ import { Mail, Loader2, CheckCircle, RefreshCw, LogOut } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { resendVerificationEmail } from "@/lib/firebase";
 import logoSvg from "@assets/logo.svg";
-import { SEO } from "@/components/SEO";
 
 export default function EmailVerification() {
   const { user, logout, refreshUser } = useAuth();
@@ -93,11 +92,6 @@ export default function EmailVerification() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4">
-      <SEO
-        title="Verify Your Email"
-        description="Verify your email address to access your DapsiGames account."
-        noindex={true}
-      />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2 mb-2">

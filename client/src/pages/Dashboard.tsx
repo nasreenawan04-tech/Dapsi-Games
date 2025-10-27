@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { getUserTasks, getWeeklyStats, getRecentActivities, getUserBadges, getTodayStats } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SEO } from "@/components/SEO";
 
 export default function Dashboard() {
   return (
@@ -21,7 +20,6 @@ export default function Dashboard() {
 
 function DashboardContent() {
   const { user } = useAuth();
-  
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
@@ -91,11 +89,6 @@ function DashboardContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <SEO
-        title="Dashboard"
-        description="Your personalized study dashboard with progress tracking, Pomodoro timer, and daily goals."
-        noindex={true}
-      />
       {/* Welcome Banner */}
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2">

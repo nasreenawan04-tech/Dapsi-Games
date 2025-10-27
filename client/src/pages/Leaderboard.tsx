@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { db, getFriends } from "@/lib/firebase";
 import { getLeaderboardViaAPI } from "@/lib/api";
 import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from "firebase/firestore";
-import { SEO } from "@/components/SEO";
 
 export default function Leaderboard() {
   return (
@@ -148,11 +147,6 @@ function LeaderboardContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <SEO
-        title="Leaderboard"
-        description="Compete with students worldwide and see where you rank on the global leaderboard."
-        noindex={true}
-      />
       <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
           <Trophy className="h-8 w-8 text-primary" />

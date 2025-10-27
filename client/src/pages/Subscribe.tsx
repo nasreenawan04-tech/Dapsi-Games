@@ -6,7 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { SEO } from "@/components/SEO";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   console.warn('Stripe public key not configured');
@@ -94,11 +93,6 @@ export default function Subscribe() {
   if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <SEO
-          title="Subscribe to Premium"
-          description="Upgrade to Premium for exclusive features, advanced analytics, and ad-free experience."
-          noindex={true}
-        />
         <Card className="max-w-2xl w-full">
           <CardHeader>
             <CardTitle>Premium Subscription</CardTitle>
@@ -114,11 +108,6 @@ export default function Subscribe() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <SEO
-          title="Subscribe to Premium"
-          description="Upgrade to Premium for exclusive features, advanced analytics, and ad-free experience."
-          noindex={true}
-        />
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Loading payment form...</p>
@@ -130,11 +119,6 @@ export default function Subscribe() {
   if (!clientSecret) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-        <SEO
-          title="Subscribe to Premium"
-          description="Upgrade to Premium for exclusive features, advanced analytics, and ad-free experience."
-          noindex={true}
-        />
         <Card className="max-w-2xl w-full">
           <CardHeader>
             <CardTitle>Error</CardTitle>
@@ -149,11 +133,6 @@ export default function Subscribe() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      <SEO
-        title="Subscribe to Premium"
-        description="Upgrade to Premium for exclusive features, advanced analytics, and ad-free experience."
-        noindex={true}
-      />
       <div className="max-w-4xl w-full grid md:grid-cols-2 gap-6">
         <Card className="flex flex-col">
           <CardHeader>

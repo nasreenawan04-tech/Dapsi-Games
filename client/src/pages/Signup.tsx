@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Loader2 } from "lucide-react";
 import logoSvg from "@assets/logo.svg";
-import { SEO } from "@/components/SEO";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -55,11 +54,6 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 p-4">
-      <SEO
-        title="Sign Up"
-        description="Create your free DapsiGames account. Join 10,000+ students who are transforming their study sessions into an epic adventure."
-        noindex={true}
-      />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2 mb-2">

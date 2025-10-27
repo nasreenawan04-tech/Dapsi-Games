@@ -76,20 +76,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Split vendor chunks for better caching
+          // Group all node_modules into a single vendor chunk to reduce memory usage
           if (id.includes('node_modules')) {
-            if (id.includes('firebase')) {
-              return 'vendor-firebase';
-            }
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-              return 'vendor-ui';
-            }
-            if (id.includes('react-hook-form') || id.includes('@hookform')) {
-              return 'vendor-forms';
-            }
             return 'vendor';
           }
         },

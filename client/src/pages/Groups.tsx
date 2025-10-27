@@ -20,7 +20,6 @@ import {
   getGroupLeaderboard
 } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { SEO } from "@/components/SEO";
 
 export default function Groups() {
   return (
@@ -155,11 +154,6 @@ function GroupsContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <SEO
-        title="Study Groups"
-        description="Join study groups, collaborate with classmates, and track collective progress."
-        noindex={true}
-      />
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 flex items-center gap-3">
